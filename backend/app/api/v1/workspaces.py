@@ -355,7 +355,11 @@ def list_workspace_members(
     if owner:
         result.append(
             WorkspaceMemberResponse(
-                user_id=owner.id, email=owner.email, role="admin", is_owner=True
+                user_id=owner.id,
+                email=owner.email,
+                full_name=owner.full_name,
+                role="admin",
+                is_owner=True,
             )
         )
     memberships = (
@@ -368,6 +372,7 @@ def list_workspace_members(
         WorkspaceMemberResponse(
             user_id=user.id,
             email=user.email,
+            full_name=user.full_name,
             role=membership.role,
             is_owner=False,
         )
@@ -517,6 +522,7 @@ def update_member_role(
     return WorkspaceMemberResponse(
         user_id=membership.user_id,
         email=membership.user.email,
+        full_name=membership.user.full_name,
         role=membership.role,
         is_owner=False,
     )

@@ -58,7 +58,11 @@ def run_licensing_test() -> None:
         ).status_code == 403
         assert client.post(
             "/api/v1/admin/staff",
-            json={"email": f"staff-{uuid4()}@example.com", "password": "staff-password"},
+            json={
+                "email": f"staff-{uuid4()}@example.com",
+                "password": "staff-password",
+                "full_name": "Staff Test",
+            },
             headers=user_headers,
         ).status_code == 403
 
@@ -83,10 +87,11 @@ def run_licensing_test() -> None:
         staff_email = f"staff-{uuid4()}@example.com"
         staff_created = client.post(
             "/api/v1/admin/staff",
-            json={"email": staff_email, "password": "staff-password"},
+            json={"email": staff_email, "password": "staff-password", "full_name": "Staff Test"},
             headers=admin_headers,
         )
         assert staff_created.status_code == 201, staff_created.text
+        assert staff_created.json()["full_name"] == "Staff Test"
         assert staff_created.json()["role"] == "STAFF"
         staff_id = staff_created.json()["id"]
         staff_headers = {"Authorization": f"Bearer {security.create_access_token(staff_id)}"}

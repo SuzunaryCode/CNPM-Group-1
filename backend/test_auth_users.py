@@ -17,17 +17,27 @@ def run_auth_users_test() -> None:
     created_ids = []
     db = SessionLocal()
     try:
-        # --- Register: happy path ---
+        # --- Register: happy path (co full_name) ---
         res = client.post(
-            "/api/v1/auth/register", json={"email": email, "password": password}
+            "/api/v1/auth/register",
+            json={"email": email, "password": password, "full_name": "Nguyen Van A"},
         )
         assert res.status_code == 200, res.text
         assert res.json()["email"] == email
         assert res.json()["role"] == "USER"
+        assert res.json()["full_name"] == "Nguyen Van A"
+
+        # --- Register: thieu full_name -> 422 ---
+        missing_name = client.post(
+            "/api/v1/auth/register",
+            json={"email": f"noname-{uuid4()}@example.com", "password": password},
+        )
+        assert missing_name.status_code == 422, missing_name.text
 
         # --- Register: email trung lap -> 400 ---
         dup = client.post(
-            "/api/v1/auth/register", json={"email": email, "password": password}
+            "/api/v1/auth/register",
+            json={"email": email, "password": password, "full_name": "Nguyen Van A"},
         )
         assert dup.status_code == 400, dup.text
 
@@ -59,6 +69,16 @@ def run_auth_users_test() -> None:
         me = client.get("/api/v1/users/me", headers=headers)
         assert me.status_code == 200, me.text
         assert me.json()["email"] == email
+        assert me.json()["full_name"] == "Nguyen Van A"
+
+        # --- Doi ten hien thi ---
+        renamed = client.put(
+            "/api/v1/users/me/profile",
+            headers=headers,
+            json={"full_name": "Nguyen Van B"},
+        )
+        assert renamed.status_code == 200, renamed.text
+        assert renamed.json()["full_name"] == "Nguyen Van B"
 
         # --- Doi mat khau: sai mat khau hien tai -> 400 ---
         wrong = client.put(

@@ -80,6 +80,8 @@ const Dashboard = () => {
   const [searchQuery, setSearchQuery] = useState("");
   const [deleteConfirmId, setDeleteConfirmId] = useState<number | null>(null);
   const [userEmail] = useState(() => localStorage.getItem("email") || "admin@novachat.com");
+  const [userFullName] = useState(() => localStorage.getItem("full_name") || "");
+  const displayName = userFullName || userEmail;
   const [selectedKnowledgeWorkspaceId, setSelectedKnowledgeWorkspaceId] = useState<number | null>(null);
   const [sidebarOpen, setSidebarOpen] = useState(false);
   const [health, setHealth] = useState<HealthStatus | null>(null);
@@ -350,10 +352,10 @@ const Dashboard = () => {
         <div className="space-y-4">
           <div className="flex items-center space-x-3 rounded-lg border border-slate-200 bg-slate-50 p-3">
             <div className="flex h-9 w-9 items-center justify-center rounded-full bg-indigo-600 font-bold uppercase text-white">
-              {userEmail.charAt(0)}
+              {displayName.charAt(0)}
             </div>
             <div className="overflow-hidden">
-              <p className="truncate text-xs font-semibold text-slate-800">{userEmail}</p>
+              <p className="truncate text-xs font-semibold text-slate-800">{displayName}</p>
               <div className="flex items-center space-x-1.5 mt-0.5">
                 <Shield className="h-3 w-3 text-indigo-600" />
                 <span className="text-[10px] font-bold uppercase text-slate-500">Quản trị viên</span>

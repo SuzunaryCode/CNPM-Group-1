@@ -22,6 +22,7 @@ interface WorkspaceManagementProps {
 interface WorkspaceMember {
   user_id: number;
   email: string;
+  full_name: string | null;
   role: "admin" | "agent";
   is_owner: boolean;
 }
@@ -229,7 +230,8 @@ const WorkspaceManagement = ({
               {members.map((member) => (
                 <div key={member.user_id} className="flex items-center justify-between border-b border-slate-100 py-3">
                   <div>
-                    <div className="text-sm font-semibold">{member.email}</div>
+                    <div className="text-sm font-semibold">{member.full_name || member.email}</div>
+                    {member.full_name && <div className="text-xs text-slate-500">{member.email}</div>}
                     {member.is_owner && <div className="text-xs text-slate-500">Chủ sở hữu</div>}
                   </div>
                   {!member.is_owner && (

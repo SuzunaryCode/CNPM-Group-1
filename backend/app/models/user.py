@@ -16,6 +16,7 @@ class User(Base):
     id = Column(Integer, primary_key=True, index=True)
     email = Column(String, unique=True, index=True, nullable=False)
     hashed_password = Column(String, nullable=False)
+    full_name = Column(String, nullable=True)
     # Vai tro toan cuc tren he thong (USER/STAFF/ADMIN) - khac voi
     # WorkspaceMember.role (admin/agent), la vai tro rieng cho tung workspace.
     role = Column(String, nullable=False, default=ROLE_USER)
