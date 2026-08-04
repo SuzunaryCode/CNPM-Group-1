@@ -5,7 +5,7 @@ from app.api.deps import get_current_user, require_role
 from app.core import security
 from app.db.session import get_db
 from app.models.user import ROLE_ADMIN, User
-from app.schemas.user import LicenseActivateRequest, PasswordChange, UserResponse
+from app.schemas.user import LicenseActivateRequest, PasswordChange, UserProfileUpdate, UserResponse
 from app.services.licensing import enforce_verify_rate_limit, verify_and_activate
 
 router = APIRouter()
@@ -28,6 +28,18 @@ def change_password(
             detail="Mật khẩu hiện tại không chính xác.",
         )
     current_user.hashed_password = security.get_password_hash(password_in.new_password)
+    db.commit()
+    db.refresh(current_user)
+    return current_user
+
+
+@router.put("/me/profile", response_model=UserResponse)
+def update_profile(
+    profile_in: UserProfileUpdate,
+    db: Session = Depends(get_db),
+    current_user: User = Depends(get_current_user),
+):
+    current_user.full_name = profile_in.full_name
     db.commit()
     db.refresh(current_user)
     return current_user

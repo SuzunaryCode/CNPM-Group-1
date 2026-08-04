@@ -38,7 +38,7 @@ def run_workspace_rbac_test() -> None:
 
         registration = client.post(
             "/api/v1/auth/register",
-            json={"email": agent_email, "password": "agent-password"},
+            json={"email": agent_email, "password": "agent-password", "full_name": "Agent Test"},
         )
         assert registration.status_code == 200, registration.text
         assert registration.json()["role"] == "USER"

@@ -2,7 +2,7 @@ import { useEffect, useState } from "react";
 import { useNavigate, useSearchParams } from "react-router-dom";
 import type { AxiosError } from "axios";
 import api from "../services/api";
-import { Mail, Lock, Eye, EyeOff, Sparkles, CheckCircle2, ArrowRight } from "lucide-react";
+import { Mail, Lock, Eye, EyeOff, Sparkles, CheckCircle2, ArrowRight, User } from "lucide-react";
 
 interface ApiErrorBody {
   detail?: string;
@@ -13,10 +13,26 @@ const getApiErrorDetail = (error: unknown) => {
   return axiosError.response?.data?.detail;
 };
 
+// Cache full_name vao localStorage (cung cho o voi "email"/"token" da dung san)
+// de Dashboard hien duoc ten thay vi email ma khong can them Context/state dung chung.
+const cacheCurrentUserName = async () => {
+  try {
+    const me = await api.get("/users/me");
+    if (me.data.full_name) {
+      localStorage.setItem("full_name", me.data.full_name);
+    } else {
+      localStorage.removeItem("full_name");
+    }
+  } catch {
+    localStorage.removeItem("full_name");
+  }
+};
+
 const Login = () => {
   const [isRegister, setIsRegister] = useState(false);
   const [email, setEmail] = useState("");
   const [password, setPassword] = useState("");
+  const [fullName, setFullName] = useState("");
   const [showPassword, setShowPassword] = useState(false);
   const [error, setError] = useState<string | null>(null);
   const [loading, setLoading] = useState(false);
@@ -36,8 +52,10 @@ const Login = () => {
       ? api.post(`/workspaces/invitations/${pendingInvitation}/accept`)
       : Promise.resolve();
     void acceptInvitation.finally(() => {
-      sessionStorage.removeItem("workspace_invitation");
-      navigate("/dashboard", { replace: true });
+      void cacheCurrentUserName().finally(() => {
+        sessionStorage.removeItem("workspace_invitation");
+        navigate("/dashboard", { replace: true });
+      });
     });
   }, [navigate, searchParams]);
 
@@ -53,16 +71,18 @@ const Login = () => {
     try {
       if (isRegister) {
         // Gọi API Đăng ký
-        await api.post("/auth/register", { email, password });
+        await api.post("/auth/register", { email, password, full_name: fullName });
         alert("Đăng ký thành công! Hãy đăng nhập bằng tài khoản này.");
         setIsRegister(false);
         setPassword("");
+        setFullName("");
         setShowPassword(false);
       } else {
         // Gọi API Đăng nhập
         const response = await api.post("/auth/login", { email, password });
         localStorage.setItem("token", response.data.access_token);
         localStorage.setItem("email", email);
+        await cacheCurrentUserName();
         const pendingInvitation = sessionStorage.getItem("workspace_invitation");
         if (pendingInvitation) {
           await api.post(`/workspaces/invitations/${pendingInvitation}/accept`);
@@ -165,6 +185,27 @@ const Login = () => {
               )}
 
               <form onSubmit={handleSubmit} className="space-y-5">
+                {isRegister && (
+                  <div>
+                    <label className="mb-2 block text-sm font-semibold text-slate-700">
+                      Họ và tên
+                    </label>
+                    <div className="relative rounded-lg border border-slate-200 bg-slate-50 transition-all focus-within:border-indigo-500 focus-within:bg-white focus-within:ring-2 focus-within:ring-indigo-500/10">
+                      <span className="absolute inset-y-0 left-0 flex items-center pl-4 text-slate-400">
+                        <User className="h-5 w-5" />
+                      </span>
+                      <input
+                        type="text"
+                        className="w-full bg-transparent py-3.5 pl-12 pr-4 text-slate-900 outline-none placeholder:text-slate-400"
+                        placeholder="Nguyễn Văn A"
+                        value={fullName}
+                        onChange={(e) => setFullName(e.target.value)}
+                        required
+                      />
+                    </div>
+                  </div>
+                )}
+
                 <div>
                   <label className="mb-2 block text-sm font-semibold text-slate-700">
                     Địa chỉ Email
@@ -245,6 +286,7 @@ const Login = () => {
                     setIsRegister(!isRegister);
                     setError(null);
                     setPassword("");
+                    setFullName("");
                   }}
                   className="text-indigo-400 hover:text-indigo-300 font-medium text-sm transition-colors cursor-pointer"
                 >

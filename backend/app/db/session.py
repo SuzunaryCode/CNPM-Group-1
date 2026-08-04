@@ -98,6 +98,8 @@ def ensure_user_schema() -> None:
     with engine.begin() as connection:
         if "plan" not in user_columns:
             connection.execute(text("ALTER TABLE users ADD COLUMN plan VARCHAR"))
+        if "full_name" not in user_columns:
+            connection.execute(text("ALTER TABLE users ADD COLUMN full_name VARCHAR"))
         connection.execute(text("UPDATE users SET plan = 'FREE' WHERE plan IS NULL"))
         connection.execute(text("UPDATE users SET role = 'ADMIN' WHERE role = 'admin'"))
         connection.execute(

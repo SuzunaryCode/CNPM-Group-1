@@ -99,6 +99,7 @@ def create_staff_account(
     staff_user = User(
         email=staff_in.email,
         hashed_password=security.get_password_hash(staff_in.password),
+        full_name=staff_in.full_name,
         role=ROLE_STAFF,
     )
     db.add(staff_user)

@@ -97,6 +97,7 @@ class KnowledgePreviewResponse(BaseModel):
 class WorkspaceMemberResponse(BaseModel):
     user_id: int
     email: EmailStr
+    full_name: str | None = None
     role: str
     is_owner: bool = False
 

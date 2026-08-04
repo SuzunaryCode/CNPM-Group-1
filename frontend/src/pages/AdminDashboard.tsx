@@ -16,6 +16,7 @@ interface LicenseKeyRow {
 interface AdminUserRow {
   id: number;
   email: string;
+  full_name: string | null;
   role: string;
   plan: "FREE" | "PRO";
   is_active: boolean;
@@ -36,6 +37,7 @@ const AdminDashboard = () => {
 
   const [users, setUsers] = useState<AdminUserRow[]>([]);
 
+  const [staffFullName, setStaffFullName] = useState("");
   const [staffEmail, setStaffEmail] = useState("");
   const [staffPassword, setStaffPassword] = useState("");
   const [creatingStaff, setCreatingStaff] = useState(false);
@@ -101,14 +103,19 @@ const AdminDashboard = () => {
 
   const createStaff = async (event: React.FormEvent) => {
     event.preventDefault();
-    if (!staffEmail.trim() || staffPassword.length < 8) {
-      toast.error("Cần email hợp lệ và mật khẩu tối thiểu 8 ký tự.");
+    if (!staffFullName.trim() || !staffEmail.trim() || staffPassword.length < 8) {
+      toast.error("Cần họ tên, email hợp lệ và mật khẩu tối thiểu 8 ký tự.");
       return;
     }
     setCreatingStaff(true);
     try {
-      await api.post("/admin/staff", { email: staffEmail.trim(), password: staffPassword });
+      await api.post("/admin/staff", {
+        email: staffEmail.trim(),
+        password: staffPassword,
+        full_name: staffFullName.trim(),
+      });
       toast.success("Đã tạo tài khoản Staff.");
+      setStaffFullName("");
       setStaffEmail("");
       setStaffPassword("");
       void loadUsers();
@@ -227,6 +234,7 @@ const AdminDashboard = () => {
           <table className="w-full text-left text-sm">
             <thead className="bg-slate-900/60 text-xs uppercase text-slate-500">
               <tr>
+                <th className="px-4 py-3">Tên</th>
                 <th className="px-4 py-3">Email</th>
                 <th className="px-4 py-3">Vai trò</th>
                 <th className="px-4 py-3">Gói</th>
@@ -236,6 +244,7 @@ const AdminDashboard = () => {
             <tbody className="divide-y divide-white/5">
               {users.map((row) => (
                 <tr key={row.id} className="text-slate-300">
+                  <td className="px-4 py-3">{row.full_name || "—"}</td>
                   <td className="px-4 py-3">{row.email}</td>
                   <td className="px-4 py-3">{row.role}</td>
                   <td className="px-4 py-3">
@@ -259,7 +268,7 @@ const AdminDashboard = () => {
               ))}
               {users.length === 0 && (
                 <tr>
-                  <td colSpan={4} className="px-4 py-6 text-center text-slate-500">
+                  <td colSpan={5} className="px-4 py-6 text-center text-slate-500">
                     Chưa có người dùng.
                   </td>
                 </tr>
@@ -275,6 +284,14 @@ const AdminDashboard = () => {
             Tạo tài khoản nội bộ với vai trò STAFF để hỗ trợ khách hàng. Tài khoản mới sẽ hiện trong tab Users.
           </p>
           <form onSubmit={createStaff} className="space-y-3">
+            <input
+              type="text"
+              required
+              placeholder="Họ tên"
+              value={staffFullName}
+              onChange={(event) => setStaffFullName(event.target.value)}
+              className="w-full rounded-md border border-slate-700 bg-slate-950 px-3 py-2 text-sm text-white outline-none focus:border-indigo-500"
+            />
             <input
               type="email"
               required

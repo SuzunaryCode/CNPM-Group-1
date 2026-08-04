@@ -42,6 +42,7 @@ def register(user_in: UserCreate, db: Session = Depends(get_db)):
     new_user = User(
         email=user_in.email,
         hashed_password=security.get_password_hash(user_in.password),
+        full_name=user_in.full_name,
         role=ROLE_USER
     )
     db.add(new_user)
@@ -98,6 +99,7 @@ async def google_callback(request: Request, db: Session = Depends(get_db)):
         user = User(
             email=email,
             hashed_password=security.get_password_hash(uuid.uuid4().hex),
+            full_name=user_info.get("name"),
             role=ROLE_USER,
         )
         db.add(user)
