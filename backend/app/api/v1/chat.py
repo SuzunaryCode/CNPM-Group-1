@@ -46,9 +46,11 @@ from app.schemas.chat import (
     WorkspaceStats,
 )
 from app.schemas.workspace import WidgetSettingsResponse
+from app.models.user import PLAN_FREE
 from app.services.llm import LLMProviderError, get_llm_provider
 from app.services.embeddings import EmbeddingServiceError, get_embedding_model
 from app.services import knowledge_store
+from app.services.monetization import enforce_embed_quota
 from app.services.realtime import realtime_manager, takeover_lock
 from app.services.retrieval import hybrid_rank, vector_distance
 
@@ -119,6 +121,7 @@ def public_widget_config(
         greeting=workspace.bot_greeting or "Xin chào! Mình có thể giúp gì cho bạn?",
         avatar_url=workspace.bot_avatar_url,
         position=workspace.widget_position or "right",
+        watermark=bool(workspace.owner and workspace.owner.plan == PLAN_FREE),
     )
 
 
@@ -200,6 +203,8 @@ async def schedule_handoff_fallback(workspace_id: int, session_id: int) -> None:
             return
         message = save_message(db, session, "system", HANDOFF_TIMEOUT_MESSAGE)
         session.fallback_sent_at = datetime.utcnow()
+        session.status = STATUS_BOT_HANDLING
+        session.updated_at = datetime.utcnow()
         db.commit()
         await realtime_manager.notify_widget(
             workspace_id,
@@ -215,11 +220,12 @@ async def schedule_handoff_fallback(workspace_id: int, session_id: int) -> None:
 
 
 def check_origin_allowed(workspace: Workspace, origin: str | None) -> None:
-    if not workspace.allowed_origin:
+    allowed_domains = workspace.allowed_domains or []
+    if not allowed_domains:
         return
-    normalized_allowed = workspace.allowed_origin.rstrip("/").lower()
     normalized_origin = (origin or "").rstrip("/").lower()
-    if normalized_origin != normalized_allowed:
+    normalized_allowed = {domain.rstrip("/").lower() for domain in allowed_domains}
+    if normalized_origin not in normalized_allowed:
         raise HTTPException(
             status_code=status.HTTP_403_FORBIDDEN,
             detail="Widget không được phép gọi từ domain này.",
@@ -347,6 +353,10 @@ async def chat_with_workspace(
 ):
     workspace = get_workspace_or_404(workspace_id, db)
     verify_chat_access(workspace, db, bearer_token, x_widget_token, origin)
+    # Han muc goi FREE chi ap dung cho luot goi qua Embed API (widget_token) -
+    # test thu trong dashboard (JWT owner) khong bi tinh/gioi han.
+    if x_widget_token and x_widget_token == workspace.widget_token:
+        enforce_embed_quota(db, workspace)
     message = chat_in.message.strip()
     if not message:
         raise HTTPException(status_code=400, detail="Tin nhắn không được để trống.")
@@ -439,6 +449,8 @@ async def chat_with_workspace_stream(
 ):
     workspace = get_workspace_or_404(workspace_id, db)
     verify_chat_access(workspace, db, bearer_token, x_widget_token, origin)
+    if x_widget_token and x_widget_token == workspace.widget_token:
+        enforce_embed_quota(db, workspace)
     message = chat_in.message.strip()
     if not message:
         raise HTTPException(status_code=400, detail="Tin nhắn không được để trống.")
@@ -792,15 +804,24 @@ def widget_poll(
     verify_chat_access(workspace, db, bearer_token, x_widget_token, origin)
     session = get_session_by_key(db, workspace_id, session_key)
 
-    if (
+    handoff_timed_out = (
         session.status == STATUS_WAITING_HUMAN
         and session.handoff_requested_at is not None
-        and session.fallback_sent_at is None
         and datetime.utcnow() - session.handoff_requested_at
         >= timedelta(seconds=HANDOFF_TIMEOUT_SECONDS)
-    ):
-        save_message(db, session, "system", HANDOFF_TIMEOUT_MESSAGE)
-        session.fallback_sent_at = datetime.utcnow()
+    )
+    if handoff_timed_out:
+        # Tach rieng "gui tin nhan 1 lan" (theo fallback_sent_at) voi "tra ve
+        # bot_handling" (luon lam, khong dieu kien theo fallback_sent_at) -
+        # phien nao bi ket dinh o waiting_human tu truoc khi fix nay ton tai
+        # (fallback_sent_at da duoc set boi code cu nhung status chua bao gio
+        # duoc tra lai) van duoc tu chua lanh ngay lan poll ke tiep, khong
+        # can can thiep tay vao DB.
+        if session.fallback_sent_at is None:
+            save_message(db, session, "system", HANDOFF_TIMEOUT_MESSAGE)
+            session.fallback_sent_at = datetime.utcnow()
+        session.status = STATUS_BOT_HANDLING
+        session.updated_at = datetime.utcnow()
         db.commit()
         db.refresh(session)
 

@@ -33,7 +33,7 @@ from app.schemas.workspace import (
     WorkspaceInvitationResponse,
     WorkspaceMemberResponse,
     WorkspaceMemberRoleUpdate,
-    WorkspaceOriginUpdate,
+    WorkspaceDomainsUpdate,
     WorkspacePromptUpdate,
     WorkspaceResponse,
     WidgetSettingsResponse,
@@ -217,16 +217,23 @@ def read_workspaces(
     db: Session = Depends(get_db),
     current_user: User = Depends(get_current_user),
 ):
+    # Dung subquery thay vi outerjoin+distinct: outerjoin theo workspace_id se
+    # nhan ban (fan-out) mot workspace ra nhieu dong neu workspace do co nhieu
+    # thanh vien khac, va DISTINCT tren toan bo cot (bao gom allowed_domains
+    # kieu JSON) se loi tren Postgres ("could not identify an equality
+    # operator for type json"). Subquery/IN tranh ca hai van de vi khong join
+    # WorkspaceMember vao SELECT chinh.
+    member_workspace_ids = db.query(WorkspaceMember.workspace_id).filter(
+        WorkspaceMember.user_id == current_user.id
+    )
     return (
         db.query(Workspace)
-        .outerjoin(WorkspaceMember, WorkspaceMember.workspace_id == Workspace.id)
         .filter(
             or_(
                 Workspace.owner_id == current_user.id,
-                WorkspaceMember.user_id == current_user.id,
+                Workspace.id.in_(member_workspace_ids),
             )
         )
-        .distinct()
         .all()
     )
 
@@ -297,14 +304,16 @@ def update_workspace_prompt(
 
 
 @router.put("/{workspace_id}/widget-domain", response_model=WorkspaceResponse)
-def update_widget_allowed_origin(
+def update_widget_allowed_domains(
     workspace_id: int,
-    origin_in: WorkspaceOriginUpdate,
+    domains_in: WorkspaceDomainsUpdate,
     db: Session = Depends(get_db),
     current_user: User = Depends(get_current_user),
 ):
     workspace = get_owned_workspace(workspace_id, db, current_user)
-    workspace.allowed_origin = origin_in.allowed_origin.strip() if origin_in.allowed_origin else None
+    workspace.allowed_domains = [
+        domain.strip().rstrip("/").lower() for domain in domains_in.domains if domain.strip()
+    ]
     db.commit()
     db.refresh(workspace)
     return workspace
@@ -346,7 +355,11 @@ def list_workspace_members(
     if owner:
         result.append(
             WorkspaceMemberResponse(
-                user_id=owner.id, email=owner.email, role="admin", is_owner=True
+                user_id=owner.id,
+                email=owner.email,
+                full_name=owner.full_name,
+                role="admin",
+                is_owner=True,
             )
         )
     memberships = (
@@ -359,6 +372,7 @@ def list_workspace_members(
         WorkspaceMemberResponse(
             user_id=user.id,
             email=user.email,
+            full_name=user.full_name,
             role=membership.role,
             is_owner=False,
         )
@@ -508,6 +522,7 @@ def update_member_role(
     return WorkspaceMemberResponse(
         user_id=membership.user_id,
         email=membership.user.email,
+        full_name=membership.user.full_name,
         role=membership.role,
         is_owner=False,
     )

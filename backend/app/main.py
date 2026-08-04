@@ -1,18 +1,22 @@
 import os
+import re
 import time
 from fastapi import FastAPI, Request
 from sqlalchemy import text
 from starlette.middleware.base import BaseHTTPMiddleware
 from starlette.responses import Response
-from app.api.v1 import users, auth, workspaces, chat
+from app.api.v1 import admin, users, auth, workspaces, chat
+from app.core.security import SECRET_KEY
 from app.db.session import (
     Base,
     DATABASE_BACKEND,
     DATABASE_IS_PERSISTENT,
     engine,
     ensure_chat_session_schema,
+    ensure_user_schema,
     ensure_workspace_schema,
 )
+from app.models.license import LicenseKey  # noqa: F401
 from app.models.workspace import WorkspaceInvitation, WorkspaceMember  # noqa: F401
 from app.services.embeddings import get_embedding_collection_suffix
 from app.services.observability import (
@@ -26,6 +30,7 @@ configure_logging()
 # Tạo tất cả các bảng trong Database (Tạm thời dùng cách này để dễ setup cho sinh viên)
 Base.metadata.create_all(bind=engine)
 ensure_workspace_schema()
+ensure_user_schema()
 ensure_chat_session_schema()
 
 app = FastAPI(
@@ -43,20 +48,28 @@ if frontend_url:
     ADMIN_ORIGINS.add(frontend_url)
 
 
+# Chi dung path thuc te widget goi tu domain khach hang (khong the biet truoc origin).
+# Cac sub-path con lai duoi /api/v1/chat/ (sessions/stats/reply/takeover/resolve...) chi
+# danh cho Agent dang nhap dashboard, khong duoc reflect origin bat ky - truoc day dieu
+# kien nay dua vao "request co header X-Widget-Token khong" (client tu khai, khong xac
+# thuc gia tri), nen ke tan cong tu them header do la lam CORS nghi day la request cong
+# khai cho ca nhung endpoint chi-Agent. Chuyen sang whitelist theo dung path.
+_PUBLIC_CHAT_PATH = re.compile(
+    r"^/api/v1/chat/\d+(/widget-config|/stream|/request-human|/history|/poll)?$"
+)
+
+
 class DynamicCORSMiddleware(BaseHTTPMiddleware):
     """
-    /api/v1/chat/* là endpoint công khai được Widget gọi từ domain của khách hàng
-    (không biết trước origin nào), nên phải chấp nhận mọi origin ở đó.
-    Các endpoint admin khác (auth/workspaces/users) chỉ chấp nhận origin trong ADMIN_ORIGINS
-    và có gửi cookie/credentials.
+    Cac path trong _PUBLIC_CHAT_PATH la endpoint cong khai duoc Widget goi tu domain cua
+    khach hang, nen phai chap nhan moi origin o do. Cac endpoint con lai (auth/workspaces/
+    users, va ca cac sub-path quan tri duoi /api/v1/chat/ nhu sessions/reply/takeover) chi
+    chap nhan origin trong ADMIN_ORIGINS va co gui cookie/credentials.
     """
 
     async def dispatch(self, request: Request, call_next):
         origin = request.headers.get("origin")
-        requested_headers = request.headers.get("access-control-request-headers", "").lower()
-        is_public_chat = request.url.path.startswith("/api/v1/chat") and (
-            "x-widget-token" in request.headers or "x-widget-token" in requested_headers
-        )
+        is_public_chat = bool(_PUBLIC_CHAT_PATH.match(request.url.path))
 
         if request.method == "OPTIONS":
             headers = {
@@ -86,13 +99,18 @@ try:
 
     app.add_middleware(
         SessionMiddleware,
-        secret_key=os.getenv("SECRET_KEY", "development-secret"),
+        # Dung chung SECRET_KEY da duoc security._resolve_secret_key() xu ly an toan
+        # (fail loudly tren production neu thieu, sinh ngau nhien o dev/CI) - truoc day
+        # co mot chuoi fallback "development-secret" rieng, cung chinh loai loi hardcode
+        # fallback nhu SECRET_KEY cua JWT.
+        secret_key=SECRET_KEY,
     )
 except ModuleNotFoundError:
     # OAuth Google sẽ hoạt động sau khi cài đầy đủ requirements.
     pass
 
 # Đăng ký các router
+app.include_router(admin.router, prefix="/api/v1/admin", tags=["Admin"])
 app.include_router(users.router, prefix="/api/v1/users", tags=["Users"])
 app.include_router(auth.router, prefix="/api/v1/auth", tags=["Auth"])
 app.include_router(workspaces.router, prefix="/api/v1/workspaces", tags=["Workspaces"])

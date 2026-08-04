@@ -35,6 +35,7 @@ const DEFAULT_SETTINGS: WidgetSettings = {
   greeting: GREETING.text,
   avatar_url: null,
   position: "right",
+  watermark: true,
 };
 
 function App() {
@@ -46,7 +47,9 @@ function App() {
   const [sessionStatus, setSessionStatus] = useState("bot_handling");
   const [realtimeVersion, setRealtimeVersion] = useState(0);
   const [settings, setSettings] = useState(DEFAULT_SETTINGS);
-  const messagesEndRef = useRef<HTMLDivElement>(null);
+  const messagesContainerRef = useRef<HTMLDivElement>(null);
+  const formRef = useRef<HTMLFormElement>(null);
+  const textareaRef = useRef<HTMLTextAreaElement>(null);
   const [{ config, configError }] = useState<{
     config: WidgetConfig | null;
     configError: string | null;
@@ -66,7 +69,8 @@ function App() {
 
   // Cuộn xuống cuối tin nhắn
   useEffect(() => {
-    messagesEndRef.current?.scrollIntoView({ behavior: "smooth" });
+    const container = messagesContainerRef.current;
+    container?.scrollTo({ top: container.scrollHeight, behavior: "smooth" });
   }, [messages, isOpen]);
 
   useEffect(() => {
@@ -137,6 +141,13 @@ function App() {
     }
   };
 
+  useEffect(() => {
+    const textarea = textareaRef.current;
+    if (!textarea) return;
+    textarea.style.height = "auto";
+    textarea.style.height = `${Math.min(textarea.scrollHeight, 120)}px`;
+  }, [inputText]);
+
   const handleSend = async (e: React.FormEvent) => {
     e.preventDefault();
     if (!inputText.trim() || isSending) return;
@@ -197,10 +208,13 @@ function App() {
   };
 
   return (
-    <div className={`fixed bottom-6 z-50 flex flex-col space-y-4 font-sans ${settings.position === "left" ? "left-6 items-start" : "right-6 items-end"}`}>
+    <div
+      className={`fixed bottom-4 sm:bottom-6 z-[2147483647] flex flex-col space-y-4 font-sans ${settings.position === "left" ? "left-4 sm:left-6 items-start" : "right-4 sm:right-6 items-end"}`}
+      style={{ "--novachat-primary": settings.primary_color } as React.CSSProperties}
+    >
       {/* Khung Chat */}
       {isOpen && (
-        <div className="w-[360px] h-[500px] bg-white rounded-2xl shadow-2xl flex flex-col overflow-hidden border border-slate-100 transform transition-all duration-300 origin-bottom-right">
+        <div className="w-[min(340px,calc(100vw-32px))] h-[min(480px,calc(100vh-104px))] bg-white rounded-2xl shadow-2xl flex flex-col overflow-hidden border border-slate-100 transform transition-all duration-300 origin-bottom-right">
           
           {/* Header */}
           <div className="p-4 flex items-center justify-between shadow-md z-10" style={{ backgroundColor: settings.primary_color }}>
@@ -214,7 +228,7 @@ function App() {
                 <h3 className="text-white font-bold text-sm tracking-wide">{settings.bot_name}</h3>
                 <div className="flex items-center space-x-1.5 mt-0.5">
                   <div className="w-2 h-2 bg-green-400 rounded-full animate-pulse"></div>
-                  <span className="text-indigo-100 text-xs font-medium">
+                  <span className="text-white/80 text-xs font-medium">
                     {sessionStatus === "human_handling"
                       ? "Nhân viên đang hỗ trợ"
                       : sessionStatus === "waiting_human"
@@ -226,14 +240,15 @@ function App() {
             </div>
             <button 
               onClick={() => setIsOpen(false)}
-              className="text-indigo-100 hover:text-white hover:bg-white/10 p-2 rounded-full transition-colors cursor-pointer"
+              className="text-white/80 hover:text-white hover:bg-white/10 p-2 rounded-full transition-colors cursor-pointer"
+              aria-label="Đóng cửa sổ chat"
             >
               <X className="w-5 h-5" />
             </button>
           </div>
 
           {/* Body (Messages) */}
-          <div className="flex-1 overflow-y-auto p-4 space-y-4 bg-slate-50">
+          <div ref={messagesContainerRef} className="flex-1 overflow-y-auto p-4 space-y-4 bg-slate-50">
             <div className="text-center text-xs text-slate-400 my-4 uppercase tracking-wider font-semibold">
               Hôm nay
             </div>
@@ -259,17 +274,21 @@ function App() {
               <div key={msg.id} className={`flex ${isUser ? 'justify-end' : 'justify-start'}`}>
                 <div className={`flex items-end max-w-[85%] space-x-2 ${isUser ? 'flex-row-reverse space-x-reverse' : ''}`}>
                   {/* Avatar */}
-                  <div className={`w-8 h-8 rounded-full flex items-center justify-center shrink-0 ${
+                  <div className={`w-8 h-8 rounded-full flex items-center justify-center shrink-0 overflow-hidden ${
                     isUser
-                      ? 'bg-indigo-100'
+                      ? ''
                       : isAgent
                         ? 'bg-gradient-to-br from-amber-500 to-orange-500'
-                        : 'bg-gradient-to-br from-indigo-500 to-violet-500'
-                  }`}>
+                        : ''
+                  }`} style={isUser || !isAgent ? {
+                    backgroundColor: isUser ? `${settings.primary_color}1a` : settings.primary_color,
+                  } : undefined}>
                     {isUser ? (
-                      <User className="w-4 h-4 text-indigo-600" />
+                      <User className="w-4 h-4" style={{ color: settings.primary_color }} />
                     ) : isAgent ? (
                       <Headset className="w-4 h-4 text-white" />
+                    ) : settings.avatar_url ? (
+                      <img src={settings.avatar_url} alt="" className="h-full w-full object-cover" />
                     ) : (
                       <Bot className="w-4 h-4 text-white" />
                     )}
@@ -277,7 +296,7 @@ function App() {
 
                   {/* Bubble */}
                   <div>
-                    <div className={`p-3 rounded-2xl text-sm shadow-sm ${
+                    <div className={`p-3 rounded-2xl text-[13px] leading-relaxed shadow-sm ${
                       isUser
                         ? 'text-white rounded-br-none'
                         : isAgent
@@ -308,16 +327,17 @@ function App() {
             {isSending && !hasPartialAnswer && sessionStatus !== "human_handling" && (
               <div className="flex justify-start">
                 <div className="flex items-end max-w-[85%] space-x-2">
-                  <div className="w-8 h-8 rounded-full flex items-center justify-center shrink-0 bg-gradient-to-br from-indigo-500 to-violet-500">
-                    <Bot className="w-4 h-4 text-white" />
+                  <div className="w-8 h-8 rounded-full flex items-center justify-center shrink-0 overflow-hidden" style={{ backgroundColor: settings.primary_color }}>
+                    {settings.avatar_url
+                      ? <img src={settings.avatar_url} alt="" className="h-full w-full object-cover" />
+                      : <Bot className="w-4 h-4 text-white" />}
                   </div>
-                  <div className="p-3 rounded-2xl text-sm shadow-sm bg-white text-slate-400 border border-slate-100 rounded-bl-none">
+                  <div className="p-3 rounded-2xl text-[13px] leading-relaxed shadow-sm bg-white text-slate-400 border border-slate-100 rounded-bl-none">
                     Đang trả lời...
                   </div>
                 </div>
               </div>
             )}
-            <div ref={messagesEndRef} />
           </div>
 
           {/* Footer (Input) */}
@@ -326,32 +346,46 @@ function App() {
               <button
                 type="button"
                 onClick={() => void handleRequestHuman()}
-                className="mb-3 flex w-full items-center justify-center gap-2 rounded-lg border border-indigo-200 bg-indigo-50 px-3 py-2 text-xs font-semibold text-indigo-700 hover:bg-indigo-100 transition-colors cursor-pointer"
+                className="mb-3 flex w-full items-center justify-center gap-2 rounded-lg border px-3 py-2 text-xs font-semibold transition-opacity hover:opacity-90 cursor-pointer"
+                style={{
+                  borderColor: `${settings.primary_color}40`,
+                  backgroundColor: `${settings.primary_color}12`,
+                  color: settings.primary_color,
+                }}
               >
                 <Headset className="w-4 h-4" />
                 Gặp nhân viên
               </button>
             )}
-            <form onSubmit={handleSend} className="relative flex items-center">
-              <input 
-                type="text" 
-                placeholder="Nhập tin nhắn..." 
+            <form ref={formRef} onSubmit={handleSend} className="relative flex items-end">
+              <textarea
+                ref={textareaRef}
+                rows={1}
+                placeholder="Nhập tin nhắn..."
                 value={inputText}
                 onChange={(e) => setInputText(e.target.value)}
-                className="w-full bg-slate-100 text-slate-700 text-sm rounded-full py-3 pl-4 pr-12 outline-none focus:ring-2 focus:ring-indigo-500/20 focus:bg-white transition-all placeholder:text-slate-400"
+                onKeyDown={(e) => {
+                  if (e.key === "Enter" && !e.shiftKey) {
+                    e.preventDefault();
+                    formRef.current?.requestSubmit();
+                  }
+                }}
+                className="novachat-input w-full max-h-[120px] resize-none bg-slate-100 text-slate-700 text-[13px] leading-relaxed rounded-2xl py-3 pl-4 pr-12 outline-none transition-all placeholder:text-slate-400"
               />
               <button
                 type="submit"
                 disabled={!inputText.trim() || isSending}
-                className="absolute right-1.5 p-2 text-white rounded-full transition-colors disabled:opacity-50 cursor-pointer"
+                className="absolute right-1.5 bottom-1.5 p-2 text-white rounded-full transition-colors disabled:opacity-50 cursor-pointer"
                 style={{ backgroundColor: settings.primary_color }}
               >
                 <Send className="w-4 h-4 ml-0.5" />
               </button>
             </form>
-            <div className="text-center mt-3 text-[10px] text-slate-400 font-medium uppercase tracking-widest">
-              Powered by NovaChat
-            </div>
+            {settings.watermark && (
+              <div className="text-center mt-3 text-[10px] text-slate-400 font-medium uppercase tracking-widest">
+                Powered by NovaChat
+              </div>
+            )}
           </div>
 
         </div>
@@ -361,9 +395,10 @@ function App() {
       <button
         onClick={() => setIsOpen(!isOpen)}
         className={`${
-          isOpen ? 'bg-slate-800 rotate-90 scale-90' : 'bg-indigo-600 hover:scale-110 shadow-indigo-600/30'
+          isOpen ? 'rotate-90 scale-90' : 'hover:scale-110'
         } w-14 h-14 rounded-full text-white shadow-xl flex items-center justify-center transition-all duration-300 cursor-pointer`}
-        style={!isOpen ? { backgroundColor: settings.primary_color } : undefined}
+        style={{ backgroundColor: settings.primary_color }}
+        aria-label={isOpen ? "Đóng cửa sổ chat" : "Mở cửa sổ chat"}
       >
         {isOpen ? <X className="w-6 h-6" /> : <MessageSquare className="w-6 h-6" />}
       </button>

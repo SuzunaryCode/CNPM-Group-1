@@ -1,6 +1,6 @@
 # NovaChat AI Embeddable Widget
 
-Widget là React 19 + TypeScript, build bằng Vite Library Mode thành JavaScript UMD và CSS để nhúng vào website khách hàng.
+Widget là React 19 + TypeScript, build bằng Vite Library Mode thành một file JavaScript UMD để nhúng vào website khách hàng.
 
 ## Chạy local
 
@@ -27,13 +27,11 @@ npm.cmd run build
 
 Output chính:
 
-- `dist/script.umd.cjs`
-- `dist/script.css`
+- `dist/script.umd.cjs` — file duy nhất cần nhúng. CSS Tailwind được import dạng chuỗi và gắn vào Shadow Root của widget khi script chạy; không tạo `<style>` trong `<head>` và không cần thêm `<link rel="stylesheet">`.
 
-Khi đưa lên CDN, có thể nhúng theo cấu hình script tag:
+Khi đưa lên CDN, chỉ cần một thẻ script duy nhất ("Plug and Play" — không cần Client Component/useEffect ở bất kỳ framework nào):
 
 ```html
-<link rel="stylesheet" href="https://cdn.example.com/script.css">
 <script
   src="https://cdn.example.com/script.umd.cjs"
   data-workspace-id="1"
@@ -42,7 +40,7 @@ Khi đưa lên CDN, có thể nhúng theo cấu hình script tag:
 ></script>
 ```
 
-Màn hình **Cấu hình Bot AI** sinh snippet với `src` lấy từ `window.location.origin` (cùng origin với dashboard) + `/script.umd.cjs`. Widget được phát hành cùng deploy của dashboard: `frontend/scripts/copy-widget-assets.mjs` build `widget/` rồi copy `dist/script.umd.cjs` + `dist/script.css` vào `frontend/public/` trước khi build dashboard (xem `frontend/package.json` script `build`) — không dùng CDN riêng, không cần domain/project deploy thêm. Nếu cấu hình `allowed_origin`, domain chứa widget phải khớp chính xác origin đã lưu.
+Màn hình **Cấu hình Bot AI** sinh snippet với `src` lấy từ `window.location.origin` (cùng origin với dashboard) + `/script.umd.cjs`. Widget được phát hành cùng deploy của dashboard: `frontend/scripts/copy-widget-assets.mjs` build `widget/` rồi copy `dist/script.umd.cjs` vào `frontend/public/` trước khi build dashboard (xem `frontend/package.json` script `build`) — không dùng CDN riêng, không cần domain/project deploy thêm. Nếu cấu hình `allowed_domains`, domain chứa widget phải khớp một trong các domain đã lưu.
 
 ## Luồng hoạt động
 
@@ -64,3 +62,21 @@ Màn hình **Cấu hình Bot AI** sinh snippet với `src` lấy từ `window.lo
 - Trích dẫn tên tài liệu/trang khi RAG có nguồn.
 
 Widget chưa có upload avatar, offline queue hoặc Service Worker.
+
+## Cách ly CSS khỏi trang host
+
+`src/main.tsx` tạo `<div id="novachat-widget-root">`, gắn Shadow DOM rồi render React và CSS vào
+Shadow Root. Vì vậy selector/reset của Tailwind không làm biến dạng website khách hàng, đồng thời
+CSS toàn cục của website cũng không thể nhắm vào nút, ảnh, SVG hoặc nội dung Markdown của widget.
+
+Các token kích thước Tailwind dùng pixel trong `src/index.css`; chúng không phụ thuộc `rem` của
+website khách hàng. Khung chat có kích thước tối đa `340x480px` và tự co theo viewport nhỏ. Ô nhập
+là `<textarea>` tự phình cao tối đa `120px`; Enter gửi và Shift+Enter xuống dòng.
+
+`test-host.html` là trang kiểm thử hồi quy với CSS toàn cục cố tình xung đột. Sau khi build, chạy
+dev server rồi mở trang này để xác nhận website và widget giữ nguyên kiểu dáng riêng:
+
+```powershell
+npm.cmd run build
+npm.cmd run dev -- --host 127.0.0.1 --port 4179
+```

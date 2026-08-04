@@ -17,17 +17,27 @@ def run_auth_users_test() -> None:
     created_ids = []
     db = SessionLocal()
     try:
-        # --- Register: happy path ---
+        # --- Register: happy path (co full_name) ---
         res = client.post(
-            "/api/v1/auth/register", json={"email": email, "password": password}
+            "/api/v1/auth/register",
+            json={"email": email, "password": password, "full_name": "Nguyen Van A"},
         )
         assert res.status_code == 200, res.text
         assert res.json()["email"] == email
-        assert res.json()["role"] == "agent"
+        assert res.json()["role"] == "USER"
+        assert res.json()["full_name"] == "Nguyen Van A"
+
+        # --- Register: thieu full_name -> 422 ---
+        missing_name = client.post(
+            "/api/v1/auth/register",
+            json={"email": f"noname-{uuid4()}@example.com", "password": password},
+        )
+        assert missing_name.status_code == 422, missing_name.text
 
         # --- Register: email trung lap -> 400 ---
         dup = client.post(
-            "/api/v1/auth/register", json={"email": email, "password": password}
+            "/api/v1/auth/register",
+            json={"email": email, "password": password, "full_name": "Nguyen Van A"},
         )
         assert dup.status_code == 400, dup.text
 
@@ -36,6 +46,15 @@ def run_auth_users_test() -> None:
             "/api/v1/auth/login", json={"email": email, "password": "sai-mat-khau-99"}
         )
         assert bad.status_code == 400, bad.text
+
+        # --- Login: email khong ton tai -> cung 400, cung message voi truong hop sai mat
+        # khau (khong duoc phan biet de tranh lo email nao da dang ky) ---
+        unknown = client.post(
+            "/api/v1/auth/login",
+            json={"email": f"khong-ton-tai-{uuid4()}@example.com", "password": "bat-ky"},
+        )
+        assert unknown.status_code == 400, unknown.text
+        assert unknown.json()["detail"] == bad.json()["detail"]
 
         # --- Login: happy path -> token ---
         ok = client.post(
@@ -50,6 +69,16 @@ def run_auth_users_test() -> None:
         me = client.get("/api/v1/users/me", headers=headers)
         assert me.status_code == 200, me.text
         assert me.json()["email"] == email
+        assert me.json()["full_name"] == "Nguyen Van A"
+
+        # --- Doi ten hien thi ---
+        renamed = client.put(
+            "/api/v1/users/me/profile",
+            headers=headers,
+            json={"full_name": "Nguyen Van B"},
+        )
+        assert renamed.status_code == 200, renamed.text
+        assert renamed.json()["full_name"] == "Nguyen Van B"
 
         # --- Doi mat khau: sai mat khau hien tai -> 400 ---
         wrong = client.put(
@@ -75,7 +104,7 @@ def run_auth_users_test() -> None:
         admin = User(
             email=f"admin-{uuid4()}@example.com",
             hashed_password=security.get_password_hash(password),
-            role="admin",
+            role="ADMIN",
         )
         db.add(admin)
         db.commit()
@@ -90,6 +119,24 @@ def run_auth_users_test() -> None:
         # --- Google SSO chua cau hinh -> 503 ---
         google = client.get("/api/v1/auth/google/login", follow_redirects=False)
         assert google.status_code in (503, 302), google.text
+
+        # --- CORS: chi path widget cong khai moi duoc phan chieu origin bat ky, du
+        # request tu khai them header X-Widget-Token (truoc day dieu kien nay dua vao
+        # header do client tu khai nen bi lam nhien duoc) ---
+        attacker_origin = "https://attacker.example.com"
+        public_resp = client.options(
+            "/api/v1/chat/999999/widget-config",
+            headers={"Origin": attacker_origin, "X-Widget-Token": "gia-mao"},
+        )
+        assert public_resp.headers.get("access-control-allow-origin") == attacker_origin
+
+        admin_only_resp = client.options(
+            "/api/v1/chat/999999/sessions",
+            headers={"Origin": attacker_origin, "X-Widget-Token": "gia-mao"},
+        )
+        assert "access-control-allow-origin" not in {
+            k.lower() for k in admin_only_resp.headers.keys()
+        }
 
         print("[SUCCESS] Auth register/login and Users me/password/RBAC test passed.")
     finally:

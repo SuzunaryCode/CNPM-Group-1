@@ -9,6 +9,7 @@ from app.db.session import get_db
 from app.models.user import User
 from app.schemas.user import UserCreate, UserResponse, UserLogin, Token
 from app.core import security
+from app.models.user import ROLE_USER
 
 router = APIRouter()
 
@@ -41,7 +42,8 @@ def register(user_in: UserCreate, db: Session = Depends(get_db)):
     new_user = User(
         email=user_in.email,
         hashed_password=security.get_password_hash(user_in.password),
-        role="agent"
+        full_name=user_in.full_name,
+        role=ROLE_USER
     )
     db.add(new_user)
     db.commit()
@@ -52,7 +54,10 @@ def register(user_in: UserCreate, db: Session = Depends(get_db)):
 def login(user_in: UserLogin, db: Session = Depends(get_db)):
     # Tìm user theo email
     user = db.query(User).filter(User.email == user_in.email).first()
-    if not user or not security.verify_password(user_in.password, user.hashed_password):
+    # verify_login_password luon chay du 1 lan bcrypt.checkpw (voi hash gia neu khong tim
+    # thay user) de thoi gian phan hoi khong bi lech giua "email khong ton tai" va "email
+    # ton tai nhung sai mat khau" - tranh lo email nao da dang ky qua timing side-channel.
+    if not security.verify_login_password(user, user_in.password):
         raise HTTPException(
             status_code=status.HTTP_400_BAD_REQUEST,
             detail="Tài khoản hoặc mật khẩu không chính xác."
@@ -94,7 +99,8 @@ async def google_callback(request: Request, db: Session = Depends(get_db)):
         user = User(
             email=email,
             hashed_password=security.get_password_hash(uuid.uuid4().hex),
-            role="agent",
+            full_name=user_info.get("name"),
+            role=ROLE_USER,
         )
         db.add(user)
         db.commit()

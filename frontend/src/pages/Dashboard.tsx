@@ -9,6 +9,7 @@ import BotConfig from "./BotConfig";
 import Analytics from "./Analytics";
 import SystemSettings from "./SystemSettings";
 import WorkspaceManagement from "./WorkspaceManagement";
+import AdminDashboard from "./AdminDashboard";
 import {
   LayoutDashboard,
   FolderKanban,
@@ -26,6 +27,7 @@ import {
   Activity,
   Shield,
   ShieldAlert,
+  ShieldCheck,
   MessagesSquare,
   Menu,
   X
@@ -36,7 +38,7 @@ interface Workspace {
   name: string;
   system_prompt?: string;
   widget_token?: string;
-  allowed_origin?: string | null;
+  allowed_domains?: string[];
   owner_id: number;
 }
 
@@ -78,9 +80,12 @@ const Dashboard = () => {
   const [searchQuery, setSearchQuery] = useState("");
   const [deleteConfirmId, setDeleteConfirmId] = useState<number | null>(null);
   const [userEmail] = useState(() => localStorage.getItem("email") || "admin@novachat.com");
+  const [userFullName] = useState(() => localStorage.getItem("full_name") || "");
+  const displayName = userFullName || userEmail;
   const [selectedKnowledgeWorkspaceId, setSelectedKnowledgeWorkspaceId] = useState<number | null>(null);
   const [sidebarOpen, setSidebarOpen] = useState(false);
   const [health, setHealth] = useState<HealthStatus | null>(null);
+  const [currentUserRole, setCurrentUserRole] = useState<string | null>(null);
 
   const navigate = useNavigate();
 
@@ -137,6 +142,10 @@ const Dashboard = () => {
 
     const timer = window.setTimeout(() => {
       void fetchWorkspaces();
+      void api
+        .get("/users/me")
+        .then((response) => setCurrentUserRole(response.data.role))
+        .catch(() => undefined);
     }, 0);
 
     return () => window.clearTimeout(timer);
@@ -322,6 +331,20 @@ const Dashboard = () => {
               <Settings className="h-4 w-4" />
               <span>Cài đặt hệ thống</span>
             </button>
+
+            {currentUserRole === "ADMIN" && (
+              <button
+                onClick={() => selectTab("admin")}
+                className={`w-full flex items-center space-x-3 px-3 py-2.5 rounded-lg font-medium text-sm transition-colors cursor-pointer ${
+                  activeTab === "admin"
+                    ? "bg-indigo-50 text-indigo-700"
+                    : "text-slate-600 hover:bg-slate-100 hover:text-slate-900"
+                }`}
+              >
+                <ShieldCheck className="h-4 w-4" />
+                <span>Quản trị hệ thống</span>
+              </button>
+            )}
           </nav>
         </div>
 
@@ -329,10 +352,10 @@ const Dashboard = () => {
         <div className="space-y-4">
           <div className="flex items-center space-x-3 rounded-lg border border-slate-200 bg-slate-50 p-3">
             <div className="flex h-9 w-9 items-center justify-center rounded-full bg-indigo-600 font-bold uppercase text-white">
-              {userEmail.charAt(0)}
+              {displayName.charAt(0)}
             </div>
             <div className="overflow-hidden">
-              <p className="truncate text-xs font-semibold text-slate-800">{userEmail}</p>
+              <p className="truncate text-xs font-semibold text-slate-800">{displayName}</p>
               <div className="flex items-center space-x-1.5 mt-0.5">
                 <Shield className="h-3 w-3 text-indigo-600" />
                 <span className="text-[10px] font-bold uppercase text-slate-500">Quản trị viên</span>
@@ -394,6 +417,8 @@ const Dashboard = () => {
             <Analytics workspaces={workspaces} />
           ) : activeTab === 'settings' ? (
             <SystemSettings />
+          ) : activeTab === 'admin' ? (
+            <AdminDashboard />
           ) : activeTab === 'workspaces' ? (
             <WorkspaceManagement
               workspaces={workspaces}
