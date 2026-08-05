@@ -95,8 +95,26 @@ def run_licensing_test() -> None:
         assert staff_created.json()["role"] == "STAFF"
         staff_id = staff_created.json()["id"]
         staff_headers = {"Authorization": f"Bearer {security.create_access_token(staff_id)}"}
-        # STAFF khong phai ADMIN -> van khong vao duoc Admin Dashboard.
-        assert client.get("/api/v1/admin/users", headers=staff_headers).status_code == 403
+        # STAFF la tro ly xem-only cho System Manager: vao duoc cac man hinh
+        # xem (users/license-keys/dashboard-stats) nhung khong duoc thay doi
+        # du lieu (generate/revoke/assign key, sua user, tao them staff).
+        assert client.get("/api/v1/admin/users", headers=staff_headers).status_code == 200
+        assert client.get("/api/v1/admin/license-keys", headers=staff_headers).status_code == 200
+        assert client.get("/api/v1/admin/dashboard-stats", headers=staff_headers).status_code == 200
+        assert client.post(
+            "/api/v1/admin/license-keys", json={"count": 1}, headers=staff_headers
+        ).status_code == 403
+        assert client.post(
+            f"/api/v1/admin/license-keys/{created_key_ids[0]}/revoke", headers=staff_headers
+        ).status_code == 403
+        assert client.put(
+            f"/api/v1/admin/users/{staff_id}", json={"company_name": "Hacked"}, headers=staff_headers
+        ).status_code == 403
+        assert client.post(
+            "/api/v1/admin/staff",
+            json={"email": f"staff2-{uuid4()}@example.com", "password": "x", "full_name": "Y"},
+            headers=staff_headers,
+        ).status_code == 403
 
         # --- Nguoi dung nhap key hop le -> len PRO, key thanh USED ---
         first_key = keys[0]["key"]

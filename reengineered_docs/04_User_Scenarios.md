@@ -1,56 +1,56 @@
-# 4. Kịch bản người dùng
+# 4. Kịch bản người dùng (User Scenarios)
 
-## Scenario 1: Onboarding và nạp tri thức
+## Scenario 1: Quản trị hệ thống & Cấp bản quyền (System Manager)
 
-1. Admin đăng ký bằng email/mật khẩu hoặc Google SSO đã cấu hình.
-2. Admin tạo workspace.
-3. Trong **Quản lý Tri thức**, Admin upload PDF/TXT/DOCX hoặc nhập text.
-4. Progress hiển thị giai đoạn upload và tạo embedding.
-5. Tài liệu xuất hiện trong danh sách; Admin có thể preview chunk/page.
-6. Admin mở **Test Bot** để hỏi thử trước khi nhúng.
+1. System Manager đăng nhập bằng tài khoản `ADMIN` (`system_manager@novachat.vn`).
+2. Giao diện mở ra ở định dạng **Premium Dark Mode** độc quyền.
+3. System Manager truy cập tab **Quản lý Licenses**, nhấn "Phát hành Key mới", chọn số lượng và thời hạn (30, 90 ngày hoặc vĩnh viễn).
+4. Hệ thống sinh ra chuỗi mã ngẫu nhiên CSPRNG dạng `NOVA-XXXX-XXXX-XXXX-XXXX`.
+5. System Manager chuyển sang tab **Khách hàng**, bấm "Cấp phát Key" cho ID của Doanh nghiệp.
 
-**Kết quả:** dữ liệu (nội dung + embedding) được lưu trong Postgres, gắn `workspace_id`. Upload lại cùng filename thay thế chunk cũ.
+---
 
-**Giới hạn:** thời gian xử lý phụ thuộc kích thước file và model embedding; code không cam kết hoàn thành trong 30/60 giây.
+## Scenario 2: Nâng cấp PRO & Tự động cập nhật giao diện (Business Admin)
 
-## Scenario 2: Cấu hình và nhúng widget
+1. Doanh nghiệp Admin ở gói FREE nhấp chọn nút nhấp nháy **Nâng cấp PRO 🚀** trên sidebar.
+2. Màn hình Landing Page hiển thị bảng so sánh tính năng và mã QR liên hệ mua Key.
+3. Doanh nghiệp nhập mã License Key được cấp vào ô xác thực và bấm "Kích hoạt".
+4. Backend kiểm tra Key hợp lệ, chuyển `User.plan` thành `PRO` và đánh dấu Key đã dùng.
+5. Hệ thống kích hoạt callback **Reactive Refresh**, tự động chuyển đổi giao diện sang **Premium Light Glassmorphic Mode**, loại bỏ toàn bộ banner quảng cáo và mở khóa ngay các tính năng bị khóa mờ mà không cần F5.
 
-1. Admin mở **Cấu hình Bot AI**.
-2. Cập nhật system prompt, allowed origin, màu, tên, lời chào, avatar URL và vị trí.
-3. Xem preview và sao chép mã nhúng.
-4. Website tải JavaScript/CSS widget từ nơi đã phát hành.
+---
 
-**Kết quả:** widget lấy public config bằng widget token và áp dụng tùy chỉnh.
+## Scenario 3: Onboarding & Cấu hình Bot AI (tiếng Việt chuẩn)
 
-## Scenario 3: Hỏi đáp RAG có trích dẫn
+1. Doanh nghiệp Admin tạo Workspace mới.
+2. Điền thông điệp chỉ dẫn tại ô **System Prompt (Tính cách Bot)** bằng tiếng Việt có dấu chuẩn.
+3. Nạp tài liệu tri thức (PDF/TXT/DOCX hoặc text) vào mục **Quản lý Tri thức**. Tiến trình tự động chia đoạn và lưu embedding vào Postgres.
+4. Cấu hình các tên miền được phép nhúng widget tại mục **Khóa Domain (Allowed Domains)** để bảo mật.
 
-1. Customer gửi câu hỏi.
-2. Backend lưu tin nhắn, lấy Top-K context đạt threshold và thêm tối đa 10 tin gần nhất.
-3. Ollama trả token qua SSE.
-4. Widget hiển thị nội dung và nguồn khi event `done` tới.
+---
 
-**Nhánh lỗi:** nếu Ollama không chạy, API phát lỗi provider. Nếu không có context đủ tin cậy hoặc phát hiện mẫu injection, session chuyển sang `waiting_human`.
+## Scenario 4: Nhúng Widget & Phản hồi AI tự động có Trích dẫn
 
-## Scenario 4: Customer yêu cầu nhân viên
+1. Admin copy đoạn mã nhúng script 1 thẻ duy nhất dán vào trang web doanh nghiệp trước thẻ `</body>`.
+2. Khách hàng truy cập website thấy bong bóng chat hiển thị với biểu tượng **số 1 chưa đọc nhấp nháy**.
+3. Khách hàng gõ câu hỏi. Widget gửi request stream qua SSE.
+4. Backend thực hiện RAG (truy hồi context + BM25 local), trả lời bằng tiếng Việt có dấu và đính kèm **Nguồn trích dẫn (Citation)** minh bạch bên dưới.
 
-1. Customer bấm **Gặp nhân viên**.
-2. Session chuyển sang `waiting_human`; Omnibox nhận sự kiện WebSocket.
-3. Nếu Agent đã bật thông báo và dashboard còn mở, trình duyệt phát âm thanh/Browser Notification.
-4. Agent bấm takeover; Redis lock và conditional SQL update ngăn double assignment.
-5. Agent trả lời và resolve; widget nhận sự kiện, đồng thời polling là fallback.
-6. Sau 60 giây chưa có Agent, hệ thống thêm một system fallback message.
+---
 
-**Giới hạn:** chưa có Web Push khi dashboard đã đóng; timer trong process được bổ sung bằng kiểm tra timeout ở endpoint poll.
+## Scenario 5: Khách hàng yêu cầu người thật & Nhân viên CSKH tiếp quản (Human Takeover)
 
-## Scenario 5: Khôi phục phiên chat
+1. Trên Widget, khách hàng nhấp nút **Gặp nhân viên hỗ trợ**.
+2. Trạng thái cuộc hội thoại chuyển sang `waiting_human`.
+3. Nhân viên CSKH (Business Staff - `agent`) đăng nhập tài khoản của mình. Hệ thống tự động mở ngay tab **Hộp thoại (Omnibox)**.
+4. Nhân viên thấy thông báo cuộc gọi chờ, bấm **Tiếp quản** (hệ thống dùng Redis Distributed Lock ngăn 2 nhân viên tranh chấp).
+5. Nhân viên xem lại toàn bộ lịch sử trò chuyện cũ của AI với khách hàng, gõ câu trả lời trực tiếp 1-1.
+6. Xử lý xong, Nhân viên nhấn **Hoàn tất (Resolve)** để đóng cuộc hội thoại.
 
-Widget lưu `session_key` trong LocalStorage. Khi người dùng reload cùng trình duyệt, widget gọi history để tải lại message. Nếu database đã reset hoặc session không còn tồn tại, widget xóa key cũ và bắt đầu session mới.
+---
 
-## Scenario 6: Mời Agent
+## Scenario 6: Mời Nhân viên CSKH vào Workspace
 
-1. Admin tạo invitation theo email và role.
-2. Dashboard tạo token/link hết hạn sau 7 ngày để sao chép.
-3. Người được mời đăng ký/đăng nhập bằng đúng email và mở link accept.
-4. Backend tạo membership `admin` hoặc `agent`.
-
-**Giới hạn:** chưa có dịch vụ gửi email invitation tự động.
+1. Admin truy cập mục Quản lý thành viên trong Workspace.
+2. Nhập email của nhân viên CSKH, chọn vai trò `Agent` và tạo lời mời.
+3. Hệ thống tạo Token lời mời bảo mật. Nhân viên đăng nhập/đăng ký bằng email tương ứng và chấp nhận lời mời để tham gia vào đội ngũ CSKH của Workspace.

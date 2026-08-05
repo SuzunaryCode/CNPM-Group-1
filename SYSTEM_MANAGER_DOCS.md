@@ -1,41 +1,68 @@
-# Tài liệu Hướng dẫn Hệ thống Quản trị (System Manager)
+# Tài liệu Hướng dẫn Hệ thống Quản trị & Phân quyền (System Manager & RBAC)
 
-Mô-đun **System Manager** là một giao diện dành riêng cho quản trị viên hệ thống (có Role là `ADMIN`), hỗ trợ việc quản lý tài nguyên, phát hành License Key và cấp phát quyền sử dụng cho khách hàng doanh nghiệp.
+Mô-đun **System Manager** là một giao diện dành riêng cho quản trị viên cấp cao của hệ thống (có Global Role là `ADMIN`), hỗ trợ việc quản lý tài nguyên toàn cục, phát hành License Key và cấp phát quyền sử dụng cho khách hàng doanh nghiệp.
 
-## 1. Tổng quan (Dashboard)
+---
+
+## 1. Tổng quan Kiến trúc Phân quyền 2 Tầng (2-Tier RBAC)
+
+Hệ thống NovaChat AI áp dụng mô hình phân quyền 2 tầng độc lập để đảm bảo tính an toàn và tính bảo mật dữ liệu tuyệt đối:
+
+```text
+               ┌─────────────────────────────────────────┐
+               │    Global System Role (Tầng Toàn Cục)   │
+               └────────────────────┬────────────────────┘
+                                    │
+           ┌────────────────────────┴────────────────────────┐
+           ▼                                                 ▼
+┌──────────────────────┐                          ┌──────────────────────┐
+│  ADMIN / System Mgr  │                          │    USER / Business   │
+│  (Dark Mode Bán Hàng)│                          │    (Doanh Nghiệp B)  │
+└──────────────────────┘                          └──────────┬───────────┘
+                                                             │
+                                              ┌──────────────┴──────────────┐
+                                              ▼                             ▼
+                                   ┌────────────────────┐        ┌────────────────────┐
+                                   │ Workspace Admin    │        │ Workspace Agent    │
+                                   │ (Owner/Cấu hình)   │        │ (Nhân viên CSKH)   │
+                                   └────────────────────┘        └────────────────────┘
+```
+
+1. **Tầng 1 - Global System Role (`User.role`):**
+   - **`ADMIN` (System Manager):** Quản trị viên toàn hệ thống (Bên A). Độc quyền truy cập Admin Dashboard, tạo/thu hồi License Key, toggle trạng thái người dùng, quản lý tài khoản hỗ trợ toàn cục. Sử dụng giao diện **Premium Dark Mode**.
+   - **`STAFF` (System Staff):** Trợ lý hỗ trợ kỹ thuật toàn cục của Bên A (chế độ xem/hỗ trợ toàn hệ thống).
+   - **`USER` (Business Account):** Người dùng/Doanh nghiệp sử dụng dịch vụ (Bên B).
+
+2. **Tầng 2 - Workspace Role (`WorkspaceMember.role`):**
+   - **`admin` (Workspace Admin):** Chủ sở hữu hoặc quản trị viên của một Workspace cụ thể. Có toàn quyền cấu hình Bot AI, nạp/xóa tri thức (Knowledge Base), thiết lập Khóa Domain, quản lý và mời thành viên.
+   - **`agent` (Workspace Staff / CSKH Agent):** Nhân viên tư vấn chăm sóc khách hàng của Doanh nghiệp. Chỉ có quyền truy cập tab **Hộp thoại (Omnibox)** để tiếp quản chat 1-1 với khách hàng khi AI chuyển giao (Human Takeover) và đóng hội thoại (`resolve`). Không có quyền sửa cấu hình bot hay dữ liệu tri thức.
+
+---
+
+## 2. Các chức năng của System Manager (Admin Dashboard)
+
+### 2.1 Tổng quan (Dashboard Overview)
 Giao diện cung cấp các thẻ thống kê trực quan theo thời gian thực:
 - **Tổng Licenses**: Toàn bộ số lượng Key đã từng được tạo.
 - **Đang kích hoạt (Active)**: Các Key đang được sử dụng và chưa hết hạn.
 - **Đã hết hạn (Expired)**: Các Key đã vượt quá thời hạn sử dụng (`expires_at`).
-- **Đã cấp phát (Assigned)**: Các Key đã được giao cho khách hàng (Customer) cụ thể thông qua tính năng Cấp phát.
-- **Tổng khách hàng**: Tổng số lượng user không phải là STAFF.
+- **Đã cấp phát (Assigned)**: Các Key đã được giao cho khách hàng cụ thể.
 
-## 2. Quản lý Khách hàng (Customers)
-Tab này liệt kê toàn bộ danh sách người dùng trên hệ thống:
-- Cung cấp tính năng **Tìm kiếm** theo `email`, `full_name` hoặc `company_name`.
-- Cho phép chỉnh sửa trực tiếp (inline-edit) **Tên công ty** (`company_name`) của từng khách hàng.
-- Nút tác vụ nhanh để bật/tắt (Toggle) gói dịch vụ giữa **FREE** và **PRO**.
+### 2.2 Quản lý Khách hàng (Customers)
+- Tìm kiếm nhanh khách hàng theo `email`, `full_name` hoặc `company_name`.
+- Chỉnh sửa trực tiếp tên công ty của từng doanh nghiệp.
+- Nút tác vụ một chạm để chuyển đổi gói dịch vụ giữa **FREE** và **PRO**.
 
-## 3. Quản lý License Key (Licenses)
-Nơi phát hành và kiểm soát toàn bộ mã kích hoạt:
-- **Phát hành Key**: Quản trị viên có thể tạo một lúc nhiều Key (Số lượng), và có thể chỉ định **thời hạn sử dụng** (ví dụ: Key có hạn trong 30, 90 ngày hoặc vĩnh viễn).
-- **Cấp phát Key (Assign)**: Nếu một License Key vẫn đang ở trạng thái `AVAILABLE`, quản trị viên có thể bấm "Cấp phát" và nhập ID của Khách hàng (Customer ID). Key đó sẽ được đánh dấu là của khách hàng đó trước khi họ thực sự kích hoạt.
-- **Vô hiệu hóa (Revoke)**: Hủy bỏ một License Key chưa sử dụng nếu nghi ngờ bị lộ hoặc cấp sai.
-- **Trạng thái tự động**: Hệ thống kiểm tra `expires_at` để tự động đổi trạng thái thành `EXPIRED` nếu quá hạn.
-
-## 4. Quản lý Tài khoản Nội bộ (Staff)
-- Cho phép quản trị viên cấp cao tạo ra các tài khoản với vai trò `STAFF` cho nhân sự hỗ trợ hệ thống.
-- Các tài khoản này sẽ tự động nhận các quyền tương đương STAFF (chủ yếu là view/hỗ trợ, không có full quyền như ADMIN).
-
-## Hướng dẫn Tích hợp & Deploy (Dành cho Team Leader)
-1. Trong phiên bản này, file cấu hình `.vercel` và `vercel.json` đã được **gỡ bỏ** khỏi mã nguồn để ngăn tự động deploy vào dự án cũ.
-2. Để deploy ứng dụng Frontend lên một tài khoản Vercel khác:
-   - Truy cập trang chủ Vercel, chọn **Import Project**.
-   - Cấp quyền truy cập vào Repo `CNPM-Group-1` cho tài khoản Vercel mới.
-   - Khi chọn Framework, Vercel thường tự nhận diện là **Vite** (nhờ có file `vite.config.ts`).
-   - Sửa root directory thành `/frontend` (hoặc để mặc định nếu build script của bạn trỏ đúng).
-   - Thiết lập các biến môi trường cần thiết (như `VITE_API_URL` trỏ tới link Backend mới của nhóm).
-3. Đảm bảo chạy Migration cho Backend trước khi khởi chạy để cập nhật cấu trúc cơ sở dữ liệu (các trường `company_name`, `expires_at`,...).
+### 2.3 Quản lý License Key (Licenses)
+- **Phát hành Key**: Tạo hàng loạt mã kích hoạt dạng `NOVA-XXXX-XXXX-XXXX-XXXX` kèm thời hạn.
+- **Cấp phát & Vô hiệu hóa (Assign / Revoke)**: Gán Key cho Customer ID cụ thể hoặc thu hồi Key chưa dùng nếu cần.
 
 ---
-*(Tài liệu này được tự động tạo kèm bản cập nhật System Manager)*
+
+## 3. Danh sách 3 Tài khoản Demo mẫu
+
+Hệ thống đã tự động cài đặt sẵn 3 tài khoản đại diện cho 3 cấp vai trò:
+
+1. **System Manager:** `system_manager@novachat.vn` / `manager123` (Global Role: `ADMIN`).
+2. **Business Admin:** `business_admin@novachat.vn` / `admin123` (Global Role: `USER`, Workspace Role: `admin`).
+3. **Business Staff (CSKH Agent):** `business_staff@novachat.vn` / `staff123` (Global Role: `USER`, Workspace Role: `agent`).

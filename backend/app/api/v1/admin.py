@@ -12,7 +12,12 @@ from app.schemas.user import StaffCreate, UserPlanUpdate, UserResponse, AdminUse
 from app.core import security
 from app.services.licensing import create_license_keys
 
-router = APIRouter(dependencies=[Depends(require_role(ROLE_ADMIN))])
+DepAdmin = Depends(require_role(ROLE_ADMIN))
+
+# Router-level: STAFF chi duoc XEM (dashboard-stats/list users/list keys). Cac
+# endpoint thay doi du lieu (generate/revoke/assign key, sua user, tao staff)
+# gan them DepAdmin rieng de chi ADMIN moi thuc hien duoc.
+router = APIRouter(dependencies=[Depends(require_role(ROLE_ADMIN, ROLE_STAFF))])
 
 
 def _check_expired(db: Session, license_key: LicenseKey) -> LicenseKey:
@@ -73,7 +78,7 @@ def get_dashboard_stats(db: Session = Depends(get_db)):
     }
 
 
-@router.post("/license-keys", response_model=list[LicenseKeyResponse], status_code=status.HTTP_201_CREATED)
+@router.post("/license-keys", response_model=list[LicenseKeyResponse], status_code=status.HTTP_201_CREATED, dependencies=[DepAdmin])
 def generate_license_keys(
     request_in: LicenseKeyGenerateRequest,
     db: Session = Depends(get_db),
@@ -105,7 +110,7 @@ def list_license_keys(
     return result
 
 
-@router.post("/license-keys/{key_id}/revoke", response_model=LicenseKeyResponse)
+@router.post("/license-keys/{key_id}/revoke", response_model=LicenseKeyResponse, dependencies=[DepAdmin])
 def revoke_license_key(
     key_id: int,
     db: Session = Depends(get_db),
@@ -119,7 +124,7 @@ def revoke_license_key(
     return _to_license_response(license_key)
 
 
-@router.post("/license-keys/{key_id}/assign", response_model=LicenseKeyResponse)
+@router.post("/license-keys/{key_id}/assign", response_model=LicenseKeyResponse, dependencies=[DepAdmin])
 def assign_license_key(
     key_id: int,
     request_in: LicenseAssignRequest,
@@ -148,6 +153,7 @@ def list_all_users(
     skip: int = 0,
     limit: int = 200,
     search: str = None,
+    role_filter: str = None,
     db: Session = Depends(get_db),
 ):
     query = db.query(User)
@@ -160,10 +166,12 @@ def list_all_users(
                 User.company_name.ilike(search_pattern)
             )
         )
+    if role_filter:
+        query = query.filter(User.role == role_filter)
     return query.order_by(User.id.desc()).offset(skip).limit(limit).all()
 
 
-@router.put("/users/{user_id}", response_model=UserResponse)
+@router.put("/users/{user_id}", response_model=UserResponse, dependencies=[DepAdmin])
 def update_user_admin(
     user_id: int,
     request_in: AdminUserUpdate,
@@ -185,7 +193,7 @@ def update_user_admin(
     return user
 
 
-@router.put("/users/{user_id}/plan", response_model=UserResponse)
+@router.put("/users/{user_id}/plan", response_model=UserResponse, dependencies=[DepAdmin])
 def update_user_plan(
     user_id: int,
     plan_in: UserPlanUpdate,
@@ -200,7 +208,7 @@ def update_user_plan(
     return user
 
 
-@router.post("/staff", response_model=UserResponse, status_code=status.HTTP_201_CREATED)
+@router.post("/staff", response_model=UserResponse, status_code=status.HTTP_201_CREATED, dependencies=[DepAdmin])
 def create_staff_account(
     staff_in: StaffCreate,
     db: Session = Depends(get_db),

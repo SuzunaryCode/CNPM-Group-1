@@ -195,12 +195,12 @@ Postgres managed instance đã có (không thêm một hạ tầng cần vận h
     chờ, backend gửi đúng tin nhắn "chưa có nhân viên" nhưng **quên đổi `session.status` về lại
     `bot_handling`** — nút "Gặp nhân viên" bị ẩn vĩnh viễn. Lần sửa đầu (PR #60) đổi status đúng
     hướng nhưng chỉ áp dụng cho phiên hết giờ **sau khi** fix lên production; verify thật cho
-    thấy nút vẫn không quay lại vì phiên khách đang test đã bị kẹt **từ trước** (điều kiện cũ
     dựa vào một cờ đã bị code lỗi set từ trước, nên fix mới không bao giờ chạm tới). Lần sửa 2
     (PR #61) tách riêng "gửi tin nhắn 1 lần" khỏi "trả status" để việc trả status **luôn** chạy
     khi hết giờ, giúp cả phiên cũ bị kẹt cũng tự lành, không cần sửa tay dữ liệu production. Bài
     học: **verify sau khi deploy không dừng ở "trường hợp mới" — phải nghĩ tới cả trạng thái cũ
     đã bị hỏng từ trước khi fix tồn tại.**
+  - **AI tự suy đoán sai nghiệp vụ do bẫy tên gọi (Naming Collision):** khi yêu cầu AI tạo giao diện Nhân viên CSKH (Workspace Agent), AI (Claude Code) đã nhìn thấy API `/admin/staff` của backend và tự ý tạo PR #79 nhầm lẫn giữa vai trò *System Staff (Global Role `STAFF` — Trợ lý xem-only của System Manager ở Bên A)* và *Workspace CSKH Agent (Workspace Member Role `agent` — Nhân viên tư vấn trực tiếp của Doanh nghiệp ở Bên B)*. AI đã thiết kế sai giao diện cho `STAFF` thành màn hình xem-only trong Admin Dashboard thay vì cho Nhân viên CSKH vào tab Omnibox (Hộp thoại) để trả lời khách hàng. Nhóm đã phát hiện lỗi logic nghiệp vụ này qua rà soát giao diện và tái cấu trúc lại phân định 2 tầng RBAC: Tầng 1 (System Admin / System Staff cho Bên A) và Tầng 2 (Business Admin / CSKH Agent cho Bên B).
   - Kết luận: AI tăng tốc rõ rệt nhưng **phải đọc diff, chạy test, và verify bằng dữ liệu thật
     (curl production, thực thi script trong jsdom) — không dừng ở "code trông đúng"**.
 
