@@ -75,12 +75,6 @@ function App() {
   }, [messages, isOpen]);
 
   useEffect(() => {
-    if (isOpen) {
-      setUnreadCount(0);
-    }
-  }, [isOpen]);
-
-  useEffect(() => {
     if (!config) return;
     void loadWidgetSettings(config).then((loaded) => {
       setSettings(loaded);
