@@ -43,13 +43,20 @@ const STATUS_STYLE: Record<string, string> = {
 };
 
 interface AdminDashboardProps {
-  externalSubTab?: "dashboard" | "customers" | "license";
+  externalSubTab?: "dashboard" | "customers" | "license" | "staff";
   hideHeaderAndTabs?: boolean;
+  currentUserRole?: string | null;
 }
 
-const AdminDashboard = ({ externalSubTab, hideHeaderAndTabs = false }: AdminDashboardProps) => {
-  const [localSubTab, setLocalSubTab] = useState<"dashboard" | "customers" | "license">("dashboard");
+const AdminDashboard = ({ externalSubTab, hideHeaderAndTabs = false, currentUserRole }: AdminDashboardProps) => {
+  const [localSubTab, setLocalSubTab] = useState<"dashboard" | "customers" | "license" | "staff">("dashboard");
   const subTab = externalSubTab || localSubTab;
+  // STAFF chi duoc xem (dashboard-stats/customers/license read-only), khong
+  // duoc tao/thu hoi/cap phat key, sua khach hang, hay tao them Staff -
+  // dung y het backend (admin.py: dependencies=[DepAdmin] tren cac endpoint
+  // thay doi du lieu). Mac dinh coi la co quyen (ADMIN) khi khong biet role,
+  // vi backend van la lop chan thuc su - day chi la an/hien nut cho gon UI.
+  const canManage = currentUserRole !== "STAFF";
 
   const [stats, setStats] = useState<DashboardStats | null>(null);
 
@@ -66,6 +73,12 @@ const AdminDashboard = ({ externalSubTab, hideHeaderAndTabs = false }: AdminDash
 
   const [assigningKeyId, setAssigningKeyId] = useState<number | null>(null);
   const [assignTargetUserId, setAssignTargetUserId] = useState("");
+
+  const [staffList, setStaffList] = useState<AdminUserRow[]>([]);
+  const [staffEmail, setStaffEmail] = useState("");
+  const [staffFullName, setStaffFullName] = useState("");
+  const [staffPassword, setStaffPassword] = useState("");
+  const [creatingStaff, setCreatingStaff] = useState(false);
 
   const loadStats = useCallback(async () => {
     try {
@@ -94,14 +107,47 @@ const AdminDashboard = ({ externalSubTab, hideHeaderAndTabs = false }: AdminDash
     }
   }, [userSearch]);
 
+  const loadStaff = useCallback(async () => {
+    try {
+      const response = await api.get("/admin/users?role_filter=STAFF");
+      setStaffList(response.data);
+    } catch {
+      toast.error("Không thể tải danh sách nhân sự.");
+    }
+  }, []);
+
   useEffect(() => {
     // eslint-disable-next-line react-hooks/set-state-in-effect
     if (subTab === "dashboard") void loadStats();
-     
+
     if (subTab === "license") void loadKeys();
-     
+
     if (subTab === "customers") void loadUsers();
-  }, [subTab, loadStats, loadKeys, loadUsers]);
+
+    if (subTab === "staff") void loadStaff();
+  }, [subTab, loadStats, loadKeys, loadUsers, loadStaff]);
+
+  const createStaff = async (e: React.FormEvent) => {
+    e.preventDefault();
+    setCreatingStaff(true);
+    try {
+      await api.post("/admin/staff", {
+        email: staffEmail,
+        password: staffPassword,
+        full_name: staffFullName,
+      });
+      toast.success(`Đã tạo tài khoản Nhân sự: ${staffEmail}`);
+      setStaffEmail("");
+      setStaffFullName("");
+      setStaffPassword("");
+      void loadStaff();
+    } catch (err) {
+      const error = err as { response?: { data?: { detail?: string } } };
+      toast.error(error.response?.data?.detail || "Không thể tạo tài khoản Nhân sự.");
+    } finally {
+      setCreatingStaff(false);
+    }
+  };
 
   // Handle generation
   const generateKeys = async () => {
@@ -180,6 +226,7 @@ const AdminDashboard = ({ externalSubTab, hideHeaderAndTabs = false }: AdminDash
     { id: "dashboard", label: "Tổng quan", icon: LayoutDashboard },
     { id: "customers", label: "Khách hàng", icon: Users },
     { id: "license", label: "Licenses", icon: KeyRound },
+    ...(canManage ? [{ id: "staff" as const, label: "Nhân sự", icon: ShieldCheck }] : []),
   ] as const;
 
   return (
@@ -366,7 +413,9 @@ const AdminDashboard = ({ externalSubTab, hideHeaderAndTabs = false }: AdminDash
                             <Building className="h-3.5 w-3.5 text-slate-500" />
                             {row.company_name || "—"}
                           </span>
-                          <button onClick={() => { setEditingUserId(row.id); setEditCompanyName(row.company_name || ""); }} className="opacity-0 group-hover:opacity-100 text-xs text-indigo-400 hover:text-indigo-300 transition-opacity hover:underline">Sửa</button>
+                          {canManage && (
+                            <button onClick={() => { setEditingUserId(row.id); setEditCompanyName(row.company_name || ""); }} className="opacity-0 group-hover:opacity-100 text-xs text-indigo-400 hover:text-indigo-300 transition-opacity hover:underline">Sửa</button>
+                          )}
                         </div>
                       )}
                     </td>
@@ -379,12 +428,16 @@ const AdminDashboard = ({ externalSubTab, hideHeaderAndTabs = false }: AdminDash
                       </div>
                     </td>
                     <td className="px-6 py-4 text-right">
-                      <button
-                        onClick={() => void updatePlan(row.id, row.plan === "PRO" ? "FREE" : "PRO")}
-                        className="cursor-pointer rounded-lg bg-slate-800 hover:bg-slate-700 border border-slate-700 px-3 py-1.5 text-xs font-bold text-slate-200 hover:text-white transition-all active:scale-[0.98]"
-                      >
-                        Đổi sang {row.plan === "PRO" ? "FREE" : "PRO"}
-                      </button>
+                      {canManage ? (
+                        <button
+                          onClick={() => void updatePlan(row.id, row.plan === "PRO" ? "FREE" : "PRO")}
+                          className="cursor-pointer rounded-lg bg-slate-800 hover:bg-slate-700 border border-slate-700 px-3 py-1.5 text-xs font-bold text-slate-200 hover:text-white transition-all active:scale-[0.98]"
+                        >
+                          Đổi sang {row.plan === "PRO" ? "FREE" : "PRO"}
+                        </button>
+                      ) : (
+                        <span className="text-[11px] text-slate-600 italic">Chỉ xem</span>
+                      )}
                     </td>
                   </tr>
                 ))}
@@ -414,6 +467,7 @@ const AdminDashboard = ({ externalSubTab, hideHeaderAndTabs = false }: AdminDash
 
           {/* Controls */}
           <div className="flex flex-col xl:flex-row gap-6 items-start xl:items-center justify-between p-6 rounded-2xl bg-slate-900/40 border border-slate-850 backdrop-blur-xl">
+             {canManage ? (
              <div className="flex flex-wrap items-center gap-4">
                 <div>
                   <label className="block text-xs font-semibold text-slate-400 mb-1.5 uppercase tracking-wider">Số lượng</label>
@@ -448,6 +502,9 @@ const AdminDashboard = ({ externalSubTab, hideHeaderAndTabs = false }: AdminDash
                   </button>
                 </div>
              </div>
+             ) : (
+               <p className="text-xs text-slate-500 italic">Bạn chỉ có quyền xem danh sách License Key.</p>
+             )}
 
              <div className="flex items-center gap-3 w-full xl:w-auto pt-4 xl:pt-0 border-t xl:border-t-0 border-slate-800">
                 <div className="relative w-full xl:w-64">
@@ -506,6 +563,7 @@ const AdminDashboard = ({ externalSubTab, hideHeaderAndTabs = false }: AdminDash
                     </td>
                     <td className="px-6 py-4 text-right space-x-2">
                       {row.status === "AVAILABLE" && (
+                        canManage ? (
                         <>
                           <button
                             onClick={() => setAssigningKeyId(row.id)}
@@ -521,6 +579,9 @@ const AdminDashboard = ({ externalSubTab, hideHeaderAndTabs = false }: AdminDash
                             <Trash2 className="h-4 w-4" />
                           </button>
                         </>
+                        ) : (
+                          <span className="text-[11px] text-slate-600 italic">Chỉ xem</span>
+                        )
                       )}
                     </td>
                   </tr>
@@ -536,6 +597,104 @@ const AdminDashboard = ({ externalSubTab, hideHeaderAndTabs = false }: AdminDash
               </tbody>
             </table>
           </div>
+        </div>
+      )}
+
+      {subTab === "staff" && (
+        <div className="space-y-6 animate-in fade-in slide-in-from-bottom-4 duration-500">
+          <div>
+            <h2 className="text-2xl font-black text-white tracking-tight bg-gradient-to-r from-white via-slate-200 to-slate-400 bg-clip-text text-transparent">
+              Quản lý Nhân sự
+            </h2>
+            <p className="text-xs text-slate-400 mt-1">Tạo tài khoản Nhân sự (Staff) hỗ trợ System Manager - chỉ xem dữ liệu, không tạo/thu hồi/cấp phát Key hay sửa khách hàng.</p>
+          </div>
+
+          {!canManage ? (
+            <p className="text-sm text-slate-500 italic">Bạn không có quyền truy cập mục này.</p>
+          ) : (
+            <>
+              <form
+                onSubmit={createStaff}
+                className="flex flex-col sm:flex-row gap-4 items-start sm:items-end p-6 rounded-2xl bg-slate-900/40 border border-slate-850 backdrop-blur-xl"
+              >
+                <div className="flex-1 w-full">
+                  <label className="block text-xs font-semibold text-slate-400 mb-1.5 uppercase tracking-wider">Họ tên</label>
+                  <input
+                    type="text"
+                    required
+                    value={staffFullName}
+                    onChange={(e) => setStaffFullName(e.target.value)}
+                    className="w-full rounded-xl border border-slate-800 bg-slate-950 px-3.5 py-2.5 text-sm text-white outline-none focus:border-indigo-500/50 focus:ring-2 focus:ring-indigo-500/10 transition-all"
+                    placeholder="Nguyễn Văn A"
+                  />
+                </div>
+                <div className="flex-1 w-full">
+                  <label className="block text-xs font-semibold text-slate-400 mb-1.5 uppercase tracking-wider">Email</label>
+                  <input
+                    type="email"
+                    required
+                    value={staffEmail}
+                    onChange={(e) => setStaffEmail(e.target.value)}
+                    className="w-full rounded-xl border border-slate-800 bg-slate-950 px-3.5 py-2.5 text-sm text-white outline-none focus:border-indigo-500/50 focus:ring-2 focus:ring-indigo-500/10 transition-all"
+                    placeholder="staff@novachat.vn"
+                  />
+                </div>
+                <div className="flex-1 w-full">
+                  <label className="block text-xs font-semibold text-slate-400 mb-1.5 uppercase tracking-wider">Mật khẩu</label>
+                  <input
+                    type="password"
+                    required
+                    minLength={8}
+                    value={staffPassword}
+                    onChange={(e) => setStaffPassword(e.target.value)}
+                    className="w-full rounded-xl border border-slate-800 bg-slate-950 px-3.5 py-2.5 text-sm text-white outline-none focus:border-indigo-500/50 focus:ring-2 focus:ring-indigo-500/10 transition-all"
+                    placeholder="Tối thiểu 8 ký tự"
+                  />
+                </div>
+                <button
+                  type="submit"
+                  disabled={creatingStaff}
+                  className="inline-flex cursor-pointer items-center gap-2 rounded-xl bg-indigo-600 hover:bg-indigo-500 px-5 py-2.5 text-sm font-bold text-white shadow-lg shadow-indigo-600/20 disabled:opacity-50 transition-all active:scale-[0.98] whitespace-nowrap"
+                >
+                  <Plus className="h-4 w-4" />
+                  {creatingStaff ? "Đang tạo..." : "Tạo tài khoản"}
+                </button>
+              </form>
+
+              <div className="overflow-x-auto rounded-2xl border border-slate-800 bg-slate-900/20 shadow-2xl backdrop-blur-xl">
+                <table className="w-full text-left text-sm whitespace-nowrap">
+                  <thead className="bg-slate-950/80 text-xs uppercase tracking-wider text-slate-400 border-b border-slate-800/80">
+                    <tr>
+                      <th className="px-6 py-4 font-bold text-slate-300">Nhân sự</th>
+                      <th className="px-6 py-4 font-bold text-slate-300">Trạng thái</th>
+                    </tr>
+                  </thead>
+                  <tbody className="divide-y divide-slate-800/60 bg-slate-900/10">
+                    {staffList.map((row) => (
+                      <tr key={row.id} className="hover:bg-indigo-500/5 transition-colors duration-200">
+                        <td className="px-6 py-4">
+                          <div className="font-semibold text-slate-100">{row.full_name || "—"}</div>
+                          <div className="text-xs text-slate-400 mt-0.5">{row.email}</div>
+                        </td>
+                        <td className="px-6 py-4">
+                          <span className={`rounded-md px-2 py-0.5 text-[10px] font-bold ${row.is_active ? "bg-emerald-500/20 text-emerald-400 border border-emerald-500/30" : "bg-slate-800 text-slate-400 border border-slate-700"}`}>
+                            {row.is_active ? "Đang hoạt động" : "Đã khóa"}
+                          </span>
+                        </td>
+                      </tr>
+                    ))}
+                    {staffList.length === 0 && (
+                      <tr>
+                        <td colSpan={2} className="px-6 py-8 text-center text-slate-500 font-medium">
+                          Chưa có tài khoản Nhân sự nào.
+                        </td>
+                      </tr>
+                    )}
+                  </tbody>
+                </table>
+              </div>
+            </>
+          )}
         </div>
       )}
 

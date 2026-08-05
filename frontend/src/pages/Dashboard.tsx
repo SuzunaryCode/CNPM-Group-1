@@ -33,7 +33,8 @@ import {
   Menu,
   X,
   Users,
-  KeyRound
+  KeyRound,
+  ShieldCheck
 } from "lucide-react";
 
 interface Workspace {
@@ -90,7 +91,10 @@ const Dashboard = () => {
   const [health, setHealth] = useState<HealthStatus | null>(null);
   const [currentUserRole, setCurrentUserRole] = useState<string | null>(null);
   const [currentUserPlan, setCurrentUserPlan] = useState<string | null>(null);
-  const isAdmin = currentUserRole === "ADMIN";
+  // STAFF dung chung giao dien/theme voi ADMIN (khu vuc System Manager), chi
+  // khac o quyen han (xem-only) - xem cac cho dung isSystemManager rieng.
+  const isAdmin = currentUserRole === "ADMIN" || currentUserRole === "STAFF";
+  const isSystemManager = currentUserRole === "ADMIN";
   const isPremiumTheme = currentUserRole === "ADMIN" || currentUserPlan === "PRO";
 
 
@@ -149,7 +153,7 @@ const Dashboard = () => {
         setUserFullName(response.data.full_name);
         localStorage.setItem("full_name", response.data.full_name);
       }
-      if (response.data.role === "ADMIN") {
+      if (response.data.role === "ADMIN" || response.data.role === "STAFF") {
         setActiveTab((current) => current === "dashboard" ? "admin_dashboard" : current);
       }
     } catch {
@@ -173,7 +177,7 @@ const Dashboard = () => {
   }, [fetchWorkspaces, fetchUserProfile, navigate]);
 
   useEffect(() => {
-    if (currentUserRole === "ADMIN") {
+    if (currentUserRole === "ADMIN" || currentUserRole === "STAFF") {
       const styleEl = document.createElement("style");
       styleEl.id = "hide-widget-for-admin";
       styleEl.innerHTML = "#novachat-widget-root { display: none !important; }";
@@ -290,7 +294,7 @@ const Dashboard = () => {
                     ? "text-indigo-600 bg-indigo-50 border border-indigo-100"
                     : "text-slate-500 bg-slate-100"
               }`}>
-                {currentUserRole === "ADMIN" ? "System Manager" : "Workspace Hub"}
+                {isSystemManager ? "System Manager" : currentUserRole === "STAFF" ? "Nhân sự hệ thống" : "Workspace Hub"}
               </span>
             </div>
             </div>
@@ -298,7 +302,7 @@ const Dashboard = () => {
           </div>
 
           <nav className="space-y-1">
-            {currentUserRole === "ADMIN" ? (
+            {isAdmin ? (
               <>
                 <button
                   onClick={() => selectTab("admin_dashboard")}
@@ -335,6 +339,20 @@ const Dashboard = () => {
                   <KeyRound className="h-4 w-4" />
                   <span>Quản lý Licenses</span>
                 </button>
+
+                {isSystemManager && (
+                  <button
+                    onClick={() => selectTab("admin_staff")}
+                    className={`w-full flex items-center space-x-3 px-3 py-2.5 rounded-lg font-medium text-sm transition-all duration-300 transform cursor-pointer ${
+                      activeTab === "admin_staff"
+                        ? "bg-gradient-to-r from-indigo-500 to-violet-600 text-white shadow-lg shadow-indigo-500/20 border-l-4 border-indigo-400"
+                        : "text-slate-400 hover:bg-slate-800/50 hover:text-slate-100 hover:translate-x-1"
+                    }`}
+                  >
+                    <ShieldCheck className="h-4 w-4" />
+                    <span>Quản lý Nhân sự</span>
+                  </button>
+                )}
               </>
             ) : (
               <>
@@ -469,7 +487,7 @@ const Dashboard = () => {
               <div className="flex items-center space-x-1.5 mt-0.5">
                 <Shield className="h-3 w-3 text-indigo-600" />
                 <span className="text-[10px] font-bold uppercase text-slate-500">
-                  {currentUserRole === "ADMIN" ? "Super Admin" : `Doanh nghiệp (${currentUserPlan || "FREE"})`}
+                  {isSystemManager ? "Super Admin" : currentUserRole === "STAFF" ? "Nhân viên (xem)" : `Doanh nghiệp (${currentUserPlan || "FREE"})`}
                 </span>
               </div>
             </div>
@@ -559,11 +577,12 @@ const Dashboard = () => {
           ) : activeTab === 'upgrade' ? (
             <UpgradeLanding onUserUpdated={fetchUserProfile} />
           ) : activeTab === 'admin' ? (
-            <AdminDashboard />
+            <AdminDashboard currentUserRole={currentUserRole} />
           ) : activeTab.startsWith('admin_') ? (
             <AdminDashboard
-              externalSubTab={activeTab.substring(6) as "dashboard" | "customers" | "license"}
+              externalSubTab={activeTab.substring(6) as "dashboard" | "customers" | "license" | "staff"}
               hideHeaderAndTabs={true}
+              currentUserRole={currentUserRole}
             />
           ) : activeTab === 'workspaces' ? (
             <WorkspaceManagement
