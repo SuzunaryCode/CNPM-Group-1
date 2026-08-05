@@ -35,6 +35,16 @@ const Analytics = ({ workspaces, currentUserPlan, onTabChange }: AnalyticsProps)
 
   const effectiveWorkspaceId = selectedWorkspaceId || workspaces[0]?.id || "";
 
+  useEffect(() => {
+    if (effectiveWorkspaceId === "" || currentUserPlan === "FREE") return;
+    let active = true;
+    api.get(`/chat/${effectiveWorkspaceId}/stats`)
+      .then((response) => active && setStats(response.data))
+      .catch(() => active && setError("Không thể tải số liệu của workspace này."))
+      .finally(() => active && setLoading(false));
+    return () => { active = false; };
+  }, [effectiveWorkspaceId, currentUserPlan]);
+
   if (currentUserPlan === "FREE") {
     return (
       <div className="flex flex-col items-center justify-center text-center py-20 px-6 max-w-2xl mx-auto space-y-6">
@@ -62,16 +72,6 @@ const Analytics = ({ workspaces, currentUserPlan, onTabChange }: AnalyticsProps)
       </div>
     );
   }
-
-  useEffect(() => {
-    if (effectiveWorkspaceId === "") return;
-    let active = true;
-    api.get(`/chat/${effectiveWorkspaceId}/stats`)
-      .then((response) => active && setStats(response.data))
-      .catch(() => active && setError("Không thể tải số liệu của workspace này."))
-      .finally(() => active && setLoading(false));
-    return () => { active = false; };
-  }, [effectiveWorkspaceId]);
 
   const botMessages = stats.messages_by_sender.bot || 0;
   const agentMessages = stats.messages_by_sender.agent || 0;
