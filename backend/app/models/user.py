@@ -22,6 +22,7 @@ class User(Base):
     role = Column(String, nullable=False, default=ROLE_USER)
     plan = Column(String, nullable=False, default=PLAN_FREE)  # FREE hoac PRO
     is_active = Column(Boolean, default=True)
+    company_name = Column(String, nullable=True)
 
     workspaces = relationship("Workspace", back_populates="owner")
 

@@ -3,6 +3,7 @@ from pydantic import BaseModel, EmailStr, Field
 class UserBase(BaseModel):
     email: EmailStr
     full_name: str | None = None
+    company_name: str | None = None
 
 class UserCreate(UserBase):
     password: str = Field(..., min_length=8, max_length=128)
@@ -43,6 +44,12 @@ class UserProfileUpdate(BaseModel):
 
 class UserPlanUpdate(BaseModel):
     plan: str = Field(pattern="^(FREE|PRO)$")
+
+
+class AdminUserUpdate(BaseModel):
+    company_name: str | None = None
+    is_active: bool | None = None
+    plan: str | None = Field(None, pattern="^(FREE|PRO)$")
 
 
 class LicenseActivateRequest(BaseModel):

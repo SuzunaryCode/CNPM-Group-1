@@ -27,13 +27,13 @@ def generate_license_key() -> str:
     return "NOVA-" + "-".join(groups)
 
 
-def create_license_keys(db: Session, count: int) -> list[LicenseKey]:
+def create_license_keys(db: Session, count: int, expires_at: datetime | None = None) -> list[LicenseKey]:
     created: list[LicenseKey] = []
     for _ in range(count):
         # Xac suat trung ma la khong dang ke (36^16 khong gian), nhung van
         # thu lai vai lan cho chac chan key thuc su unique trong DB.
         for _attempt in range(5):
-            license_key = LicenseKey(key=generate_license_key())
+            license_key = LicenseKey(key=generate_license_key(), expires_at=expires_at)
             db.add(license_key)
             try:
                 db.commit()

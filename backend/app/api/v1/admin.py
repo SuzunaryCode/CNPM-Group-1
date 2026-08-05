@@ -1,16 +1,25 @@
+from datetime import datetime
 from fastapi import APIRouter, Depends, HTTPException, status
 from sqlalchemy.orm import Session
+from sqlalchemy import or_, func
 
 from app.api.deps import require_role
 from app.db.session import get_db
-from app.models.license import STATUS_REVOKED, LicenseKey
+from app.models.license import STATUS_REVOKED, STATUS_AVAILABLE, STATUS_EXPIRED, STATUS_USED, LicenseKey
 from app.models.user import ROLE_ADMIN, ROLE_STAFF, User
-from app.schemas.license import LicenseKeyGenerateRequest, LicenseKeyResponse
-from app.schemas.user import StaffCreate, UserPlanUpdate, UserResponse
+from app.schemas.license import LicenseKeyGenerateRequest, LicenseKeyResponse, LicenseAssignRequest
+from app.schemas.user import StaffCreate, UserPlanUpdate, UserResponse, AdminUserUpdate
 from app.core import security
 from app.services.licensing import create_license_keys
 
 router = APIRouter(dependencies=[Depends(require_role(ROLE_ADMIN))])
+
+
+def _check_expired(db: Session, license_key: LicenseKey) -> LicenseKey:
+    if license_key.status == STATUS_AVAILABLE and license_key.expires_at and license_key.expires_at < datetime.utcnow():
+        license_key.status = STATUS_EXPIRED
+        db.commit()
+    return license_key
 
 
 def _to_license_response(license_key: LicenseKey) -> LicenseKeyResponse:
@@ -18,11 +27,41 @@ def _to_license_response(license_key: LicenseKey) -> LicenseKeyResponse:
         id=license_key.id,
         key=license_key.key,
         status=license_key.status,
+        assigned_to_user_id=license_key.assigned_to_user_id,
+        assigned_to_email=license_key.assigned_to.email if license_key.assigned_to else None,
         used_by_user_id=license_key.used_by_user_id,
         used_by_email=license_key.used_by.email if license_key.used_by else None,
         used_at=license_key.used_at,
+        expires_at=license_key.expires_at,
         created_at=license_key.created_at,
     )
+
+
+@router.get("/dashboard-stats")
+def get_dashboard_stats(db: Session = Depends(get_db)):
+    # Auto expire available keys
+    db.query(LicenseKey).filter(
+        LicenseKey.status == STATUS_AVAILABLE,
+        LicenseKey.expires_at < datetime.utcnow()
+    ).update({LicenseKey.status: STATUS_EXPIRED})
+    db.commit()
+
+    total_licenses = db.query(LicenseKey).count()
+    active_licenses = db.query(LicenseKey).filter(LicenseKey.status == STATUS_USED).count()
+    expired_licenses = db.query(LicenseKey).filter(LicenseKey.status == STATUS_EXPIRED).count()
+    assigned_licenses = db.query(LicenseKey).filter(
+        LicenseKey.assigned_to_user_id.isnot(None),
+        LicenseKey.status == STATUS_AVAILABLE
+    ).count()
+    total_customers = db.query(User).count()
+    
+    return {
+        "total_licenses": total_licenses,
+        "active_licenses": active_licenses,
+        "expired_licenses": expired_licenses,
+        "assigned_licenses": assigned_licenses,
+        "total_customers": total_customers
+    }
 
 
 @router.post("/license-keys", response_model=list[LicenseKeyResponse], status_code=status.HTTP_201_CREATED)
@@ -30,7 +69,7 @@ def generate_license_keys(
     request_in: LicenseKeyGenerateRequest,
     db: Session = Depends(get_db),
 ):
-    created = create_license_keys(db, request_in.count)
+    created = create_license_keys(db, request_in.count, request_in.expires_at)
     return [_to_license_response(key) for key in created]
 
 
@@ -38,16 +77,23 @@ def generate_license_keys(
 def list_license_keys(
     skip: int = 0,
     limit: int = 200,
+    search: str = None,
+    status_filter: str = None,
     db: Session = Depends(get_db),
 ):
-    keys = (
-        db.query(LicenseKey)
-        .order_by(LicenseKey.created_at.desc())
-        .offset(skip)
-        .limit(limit)
-        .all()
-    )
-    return [_to_license_response(key) for key in keys]
+    query = db.query(LicenseKey)
+    if search:
+        query = query.filter(LicenseKey.key.ilike(f"%{search}%"))
+    if status_filter:
+        query = query.filter(LicenseKey.status == status_filter)
+        
+    keys = query.order_by(LicenseKey.created_at.desc()).offset(skip).limit(limit).all()
+    # Check expiry
+    result = []
+    for key in keys:
+        key = _check_expired(db, key)
+        result.append(_to_license_response(key))
+    return result
 
 
 @router.post("/license-keys/{key_id}/revoke", response_model=LicenseKeyResponse)
@@ -64,13 +110,70 @@ def revoke_license_key(
     return _to_license_response(license_key)
 
 
+@router.post("/license-keys/{key_id}/assign", response_model=LicenseKeyResponse)
+def assign_license_key(
+    key_id: int,
+    request_in: LicenseAssignRequest,
+    db: Session = Depends(get_db),
+):
+    license_key = db.query(LicenseKey).filter(LicenseKey.id == key_id).first()
+    if not license_key:
+        raise HTTPException(status_code=404, detail="Không tìm thấy License Key.")
+    
+    target_user = db.query(User).filter(User.id == request_in.user_id).first()
+    if not target_user:
+        raise HTTPException(status_code=404, detail="Không tìm thấy người dùng.")
+
+    license_key = _check_expired(db, license_key)
+    if license_key.status != STATUS_AVAILABLE:
+        raise HTTPException(status_code=400, detail=f"License Key đang ở trạng thái {license_key.status}, không thể cấp phát.")
+        
+    license_key.assigned_to_user_id = target_user.id
+    db.commit()
+    db.refresh(license_key)
+    return _to_license_response(license_key)
+
+
 @router.get("/users", response_model=list[UserResponse])
 def list_all_users(
     skip: int = 0,
     limit: int = 200,
+    search: str = None,
     db: Session = Depends(get_db),
 ):
-    return db.query(User).offset(skip).limit(limit).all()
+    query = db.query(User)
+    if search:
+        search_pattern = f"%{search}%"
+        query = query.filter(
+            or_(
+                User.email.ilike(search_pattern),
+                User.full_name.ilike(search_pattern),
+                User.company_name.ilike(search_pattern)
+            )
+        )
+    return query.order_by(User.id.desc()).offset(skip).limit(limit).all()
+
+
+@router.put("/users/{user_id}", response_model=UserResponse)
+def update_user_admin(
+    user_id: int,
+    request_in: AdminUserUpdate,
+    db: Session = Depends(get_db),
+):
+    user = db.query(User).filter(User.id == user_id).first()
+    if not user:
+        raise HTTPException(status_code=404, detail="Không tìm thấy người dùng.")
+        
+    if request_in.company_name is not None:
+        user.company_name = request_in.company_name
+    if request_in.is_active is not None:
+        user.is_active = request_in.is_active
+    if request_in.plan is not None:
+        user.plan = request_in.plan
+        
+    db.commit()
+    db.refresh(user)
+    return user
 
 
 @router.put("/users/{user_id}/plan", response_model=UserResponse)
