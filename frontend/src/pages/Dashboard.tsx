@@ -153,7 +153,7 @@ const Dashboard = () => {
         setUserFullName(response.data.full_name);
         localStorage.setItem("full_name", response.data.full_name);
       }
-      if (response.data.role === "ADMIN" || response.data.role === "STAFF") {
+      if (response.data.role === "ADMIN") {
         setActiveTab((current) => current === "dashboard" ? "admin_dashboard" : current);
       }
     } catch {
