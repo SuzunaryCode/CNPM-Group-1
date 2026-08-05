@@ -99,34 +99,39 @@ const Login = () => {
   };
 
   return (
-    <div className="novachat-light flex min-h-screen overflow-hidden bg-[#f6f7f9] font-sans text-slate-900">
+    <div className="novachat-dark flex min-h-screen overflow-hidden bg-slate-950 font-sans text-slate-100 relative">
+      {/* Background Glow Orbs */}
+      <div className="absolute top-1/4 left-1/4 -translate-x-1/2 -translate-y-1/2 w-[35rem] h-[35rem] bg-indigo-600/10 rounded-full blur-[120px] pointer-events-none"></div>
+      <div className="absolute bottom-1/4 right-1/4 translate-x-1/2 translate-y-1/2 w-[40rem] h-[40rem] bg-purple-650/10 rounded-full blur-[130px] pointer-events-none"></div>
+      <div className="absolute top-1/2 right-10 -translate-y-1/2 w-[30rem] h-[30rem] bg-pink-500/5 rounded-full blur-[100px] pointer-events-none"></div>
+
       <div className="relative z-10 grid min-h-screen w-full lg:grid-cols-12">
         {/* Left Side - Branding & Visuals (Desktop only) */}
-        <div className="relative hidden flex-col justify-between overflow-hidden border-r border-slate-200 bg-white p-12 lg:col-span-7 lg:flex">
+        <div className="relative hidden flex-col justify-between overflow-hidden border-r border-slate-900 bg-slate-900/10 p-12 lg:col-span-7 lg:flex backdrop-blur-md">
           {/* Logo */}
           <div className="flex items-center space-x-3">
-            <img src="/favicon.png" alt="NovaChat Logo" className="h-12 w-12 object-contain" />
-            <span className="text-xl font-bold text-slate-900">
+            <img src="/favicon.png" alt="NovaChat Logo" className="h-12 w-12 object-contain shadow-lg shadow-indigo-500/20" />
+            <span className="text-xl font-black text-white bg-gradient-to-r from-white via-slate-200 to-slate-400 bg-clip-text text-transparent tracking-wide">
               NovaChat AI
             </span>
           </div>
 
           {/* Center Showcase */}
-          <div className="max-w-md my-auto space-y-8">
-            <div className="inline-flex items-center space-x-2 rounded-md border border-indigo-200 bg-indigo-50 px-3 py-1 text-xs font-semibold text-indigo-700">
-              <Sparkles className="h-3 w-3" />
+          <div className="max-w-md my-auto space-y-8 relative z-10">
+            <div className="inline-flex items-center space-x-2 rounded-full border border-indigo-500/20 bg-indigo-500/10 px-3.5 py-1 text-xs font-bold text-indigo-400">
+              <Sparkles className="h-3.5 w-3.5" />
               <span>Nền tảng quản lý Bot AI</span>
             </div>
 
             <div className="space-y-4">
-              <h1 className="text-4xl font-extrabold leading-tight text-slate-900">
+              <h1 className="text-4xl font-black leading-tight text-white tracking-tight">
                 Tạo dựng và quản trị{" "}
-                <span className="text-indigo-600">
+                <span className="bg-gradient-to-r from-indigo-400 via-purple-400 to-pink-400 bg-clip-text text-transparent font-black">
                   Chatbot thông minh
                 </span>{" "}
                 chỉ trong vài phút.
               </h1>
-              <p className="text-base leading-relaxed text-slate-600">
+              <p className="text-sm leading-relaxed text-slate-400">
                 Nền tảng giúp bạn quản lý nhiều không gian làm việc khác nhau, huấn luyện dữ liệu tùy chỉnh và tích hợp trực tiếp các trợ lý ảo AI tốt nhất vào doanh nghiệp của bạn.
               </p>
             </div>
@@ -140,37 +145,39 @@ const Login = () => {
                 "Phân quyền quản trị thông tin bảo mật tuyệt đối",
               ].map((text, idx) => (
                 <li key={idx} className="flex items-start space-x-3">
-                  <CheckCircle2 className="mt-0.5 h-5 w-5 shrink-0 text-emerald-600" />
-                  <span className="text-sm font-medium text-slate-700">{text}</span>
+                  <CheckCircle2 className="mt-0.5 h-5 w-5 shrink-0 text-emerald-450 drop-shadow-[0_0_8px_rgba(52,211,153,0.3)]" />
+                  <span className="text-sm font-semibold text-slate-300">{text}</span>
                 </li>
               ))}
             </ul>
           </div>
 
           {/* Footer Info */}
-          <div className="text-xs text-slate-500 font-medium">
+          <div className="text-xs text-slate-650 font-medium">
             © 2026 NovaChat AI. Dự án môn học Kiến trúc Phần mềm - Nhóm 1.
           </div>
         </div>
 
         {/* Right Side - Authentication Form */}
-        <div className="col-span-12 flex items-center justify-center bg-slate-50 p-6 sm:p-12 lg:col-span-5">
-          <div className="w-full max-w-md space-y-8">
+        <div className="col-span-12 flex items-center justify-center p-6 sm:p-12 lg:col-span-5 relative z-10">
+          <div className="w-full max-w-md space-y-6">
             {/* Branding for Mobile */}
             <div className="flex lg:hidden items-center justify-center space-x-3 mb-6">
-                <img src="/favicon.png" alt="NovaChat Logo" className="h-10 w-10 object-contain" />
-              <span className="text-2xl font-bold text-slate-900">
+              <img src="/favicon.png" alt="NovaChat Logo" className="h-10 w-10 object-contain shadow-lg shadow-indigo-500/20" />
+              <span className="text-2xl font-black text-white bg-gradient-to-r from-white to-slate-350 bg-clip-text text-transparent">
                 NovaChat AI
               </span>
             </div>
 
             {/* Card Form */}
-            <div className="relative overflow-hidden rounded-lg border border-slate-200 bg-white p-8 shadow-sm">
+            <div className="relative overflow-hidden rounded-3xl border border-slate-800 bg-slate-900/40 p-8 shadow-2xl backdrop-blur-xl">
+              <div className="absolute -right-10 -top-10 w-32 h-32 bg-indigo-500/10 rounded-full blur-3xl pointer-events-none"></div>
+              
               <div className="mb-8 text-center">
-                <h2 className="mb-2 text-3xl font-extrabold text-slate-900">
+                <h2 className="mb-2 text-3xl font-black text-white tracking-tight">
                   {isRegister ? "Đăng ký tài khoản" : "Chào mừng trở lại"}
                 </h2>
-                <p className="text-sm text-slate-600">
+                <p className="text-xs text-slate-400">
                   {isRegister
                     ? "Tạo tài khoản quản trị để trải nghiệm hệ thống"
                     : "Đăng nhập để quản lý chatbot của bạn"}
@@ -178,7 +185,7 @@ const Login = () => {
               </div>
 
               {error && (
-                <div className="mb-6 rounded-xl bg-red-500/10 border border-red-500/20 p-4 text-sm text-red-400 flex items-start space-x-2">
+                <div className="mb-6 rounded-xl bg-red-500/10 border border-red-500/20 p-4 text-xs text-red-400 flex items-start space-x-2">
                   <span className="font-bold">⚠️ Lỗi:</span>
                   <span>{error}</span>
                 </div>
@@ -187,16 +194,16 @@ const Login = () => {
               <form onSubmit={handleSubmit} className="space-y-5">
                 {isRegister && (
                   <div>
-                    <label className="mb-2 block text-sm font-semibold text-slate-700">
+                    <label className="mb-2 block text-xs font-semibold text-slate-400 uppercase tracking-wider">
                       Họ và tên
                     </label>
-                    <div className="relative rounded-lg border border-slate-200 bg-slate-50 transition-all focus-within:border-indigo-500 focus-within:bg-white focus-within:ring-2 focus-within:ring-indigo-500/10">
-                      <span className="absolute inset-y-0 left-0 flex items-center pl-4 text-slate-400">
-                        <User className="h-5 w-5" />
+                    <div className="relative rounded-xl border border-slate-800 bg-slate-950/60 transition-all focus-within:border-indigo-500/50 focus-within:ring-2 focus-within:ring-indigo-500/10">
+                      <span className="absolute inset-y-0 left-0 flex items-center pl-4 text-slate-550">
+                        <User className="h-4 w-4" />
                       </span>
                       <input
                         type="text"
-                        className="w-full bg-transparent py-3.5 pl-12 pr-4 text-slate-900 outline-none placeholder:text-slate-400"
+                        className="w-full bg-transparent py-3.5 pl-11 pr-4 text-sm text-white outline-none placeholder:text-slate-700"
                         placeholder="Nguyễn Văn A"
                         value={fullName}
                         onChange={(e) => setFullName(e.target.value)}
@@ -207,16 +214,16 @@ const Login = () => {
                 )}
 
                 <div>
-                  <label className="mb-2 block text-sm font-semibold text-slate-700">
+                  <label className="mb-2 block text-xs font-semibold text-slate-400 uppercase tracking-wider">
                     Địa chỉ Email
                   </label>
-                  <div className="relative rounded-lg border border-slate-200 bg-slate-50 transition-all focus-within:border-indigo-500 focus-within:bg-white focus-within:ring-2 focus-within:ring-indigo-500/10">
-                    <span className="absolute inset-y-0 left-0 flex items-center pl-4 text-slate-400">
-                      <Mail className="h-5 w-5" />
+                  <div className="relative rounded-xl border border-slate-800 bg-slate-950/60 transition-all focus-within:border-indigo-500/50 focus-within:ring-2 focus-within:ring-indigo-500/10">
+                    <span className="absolute inset-y-0 left-0 flex items-center pl-4 text-slate-555">
+                      <Mail className="h-4 w-4" />
                     </span>
                     <input
                       type="email"
-                      className="w-full bg-transparent py-3.5 pl-12 pr-4 text-slate-900 outline-none placeholder:text-slate-400"
+                      className="w-full bg-transparent py-3.5 pl-11 pr-4 text-sm text-white outline-none placeholder:text-slate-700"
                       placeholder="admin@novachat.com"
                       value={email}
                       onChange={(e) => setEmail(e.target.value)}
@@ -226,16 +233,16 @@ const Login = () => {
                 </div>
 
                 <div>
-                  <label className="mb-2 block text-sm font-semibold text-slate-700">
+                  <label className="mb-2 block text-xs font-semibold text-slate-400 uppercase tracking-wider">
                     Mật khẩu
                   </label>
-                  <div className="relative rounded-lg border border-slate-200 bg-slate-50 transition-all focus-within:border-indigo-500 focus-within:bg-white focus-within:ring-2 focus-within:ring-indigo-500/10">
-                    <span className="absolute inset-y-0 left-0 flex items-center pl-4 text-slate-400">
-                      <Lock className="h-5 w-5" />
+                  <div className="relative rounded-xl border border-slate-800 bg-slate-950/60 transition-all focus-within:border-indigo-500/50 focus-within:ring-2 focus-within:ring-indigo-500/10">
+                    <span className="absolute inset-y-0 left-0 flex items-center pl-4 text-slate-555">
+                      <Lock className="h-4 w-4" />
                     </span>
                     <input
                       type={showPassword ? "text" : "password"}
-                      className="w-full bg-transparent py-3.5 pl-12 pr-12 text-slate-900 outline-none placeholder:text-slate-400"
+                      className="w-full bg-transparent py-3.5 pl-11 pr-12 text-sm text-white outline-none placeholder:text-slate-700"
                       placeholder="••••••••"
                       value={password}
                       onChange={(e) => setPassword(e.target.value)}
@@ -244,9 +251,9 @@ const Login = () => {
                     <button
                       type="button"
                       onClick={() => setShowPassword(!showPassword)}
-                      className="absolute inset-y-0 right-0 flex items-center pr-4 text-slate-400 transition-colors hover:text-slate-700"
+                      className="absolute inset-y-0 right-0 flex items-center pr-4 text-slate-500 transition-colors hover:text-slate-300"
                     >
-                      {showPassword ? <EyeOff className="h-5 w-5" /> : <Eye className="h-5 w-5" />}
+                      {showPassword ? <EyeOff className="h-4 w-4" /> : <Eye className="h-4 w-4" />}
                     </button>
                   </div>
                 </div>
@@ -254,9 +261,9 @@ const Login = () => {
                 <button
                   type="submit"
                   disabled={loading}
-                  className="group relative mt-2 w-full cursor-pointer overflow-hidden rounded-lg bg-indigo-600 font-semibold text-white transition-colors hover:bg-indigo-500 active:scale-[0.99] disabled:pointer-events-none disabled:opacity-50"
+                  className="group relative mt-2 w-full cursor-pointer overflow-hidden rounded-xl bg-gradient-to-r from-indigo-500 via-purple-500 to-pink-500 hover:from-indigo-600 hover:via-purple-600 hover:to-pink-650 font-bold text-white shadow-lg shadow-indigo-500/20 transition-all duration-300 transform active:scale-[0.98] disabled:pointer-events-none disabled:opacity-50"
                 >
-                  <div className="flex w-full items-center justify-center space-x-2 px-4 py-3.5">
+                  <div className="flex w-full items-center justify-center space-x-2 px-4 py-3.5 text-sm">
                     <span>{loading ? "Đang xử lý..." : isRegister ? "Đăng ký" : "Đăng nhập"}</span>
                     {!loading && <ArrowRight className="h-4 w-4 transition-transform group-hover:translate-x-1" />}
                   </div>
@@ -265,16 +272,16 @@ const Login = () => {
 
               {!isRegister && (
                 <>
-                  <div className="my-5 flex items-center gap-3 text-xs text-slate-400">
-                    <span className="h-px flex-1 bg-slate-200" />
+                  <div className="my-5 flex items-center gap-3 text-xs text-slate-650">
+                    <span className="h-px flex-1 bg-slate-800" />
                     hoặc
-                    <span className="h-px flex-1 bg-slate-200" />
+                    <span className="h-px flex-1 bg-slate-800" />
                   </div>
                   <a
                     href={googleLoginUrl}
-                    className="flex w-full items-center justify-center gap-3 rounded-lg border border-slate-200 bg-white px-4 py-3 text-sm font-semibold text-slate-700 transition-colors hover:bg-slate-50"
+                    className="flex w-full items-center justify-center gap-3 rounded-xl border border-slate-800 bg-white/5 px-4 py-3.5 text-sm font-bold text-slate-200 transition-all hover:bg-white/10 active:scale-[0.98]"
                   >
-                    <span className="flex h-5 w-5 items-center justify-center font-bold text-blue-600">G</span>
+                    <span className="flex h-5 w-5 items-center justify-center font-black text-indigo-400">G</span>
                     Tiếp tục với Google
                   </a>
                 </>
@@ -288,7 +295,7 @@ const Login = () => {
                     setPassword("");
                     setFullName("");
                   }}
-                  className="text-indigo-400 hover:text-indigo-300 font-medium text-sm transition-colors cursor-pointer"
+                  className="text-indigo-455 hover:text-indigo-350 font-bold text-sm transition-colors cursor-pointer"
                 >
                   {isRegister
                     ? "Đã có tài khoản quản trị? Đăng nhập ngay"
@@ -298,7 +305,7 @@ const Login = () => {
             </div>
 
             {/* Footer for Mobile */}
-            <div className="block lg:hidden text-center text-xs text-slate-500 font-medium mt-4">
+            <div className="block lg:hidden text-center text-xs text-slate-600 font-medium mt-4">
               © 2026 NovaChat AI. Dự án môn học Kiến trúc Phần mềm - Nhóm 1.
             </div>
           </div>
@@ -309,5 +316,3 @@ const Login = () => {
 };
 
 export default Login;
-
-
