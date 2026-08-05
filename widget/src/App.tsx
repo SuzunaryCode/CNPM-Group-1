@@ -40,6 +40,7 @@ const DEFAULT_SETTINGS: WidgetSettings = {
 
 function App() {
   const [isOpen, setIsOpen] = useState(false);
+  const [unreadCount, setUnreadCount] = useState(1);
   const [messages, setMessages] = useState<WidgetMessage[]>([GREETING]);
   const [inputText, setInputText] = useState("");
   const [isSending, setIsSending] = useState(false);
@@ -74,6 +75,12 @@ function App() {
   }, [messages, isOpen]);
 
   useEffect(() => {
+    if (isOpen) {
+      setUnreadCount(0);
+    }
+  }, [isOpen]);
+
+  useEffect(() => {
     if (!config) return;
     void loadWidgetSettings(config).then((loaded) => {
       setSettings(loaded);
@@ -83,19 +90,48 @@ function App() {
     }).catch(() => undefined);
   }, [config]);
 
+  // Hàm tải tin nhắn chào mừng từ AI bất đồng bộ
+  const fetchWelcomeMessage = useCallback(() => {
+    if (!config) return;
+    fetch(`${config.apiUrl}/chat/${config.workspaceId}/welcome-message`, {
+      headers: {
+        "X-Widget-Token": config.widgetToken,
+      },
+    })
+      .then((res) => {
+        if (!res.ok) throw new Error();
+        return res.json();
+      })
+      .then((data) => {
+        if (data.welcome_message) {
+          setMessages((current) =>
+            current.map((msg) =>
+              msg.id === GREETING.id ? { ...msg, text: data.welcome_message } : msg
+            )
+          );
+        }
+      })
+      .catch(() => undefined);
+  }, [config]);
+
   // Mo lai trang co session_key cu -> tai lai toan bo lich su hoi thoai.
   useEffect(() => {
     if (historyLoadedRef.current || !config) return;
     historyLoadedRef.current = true;
     void loadHistory(config).then((history) => {
-      if (history.length === 0) return;
+      if (history.length === 0) {
+        setUnreadCount(1);
+        fetchWelcomeMessage();
+        return;
+      }
+      setUnreadCount(0);
       setMessages([GREETING, ...history.map((m) => ({ id: m.id, text: m.content, sender: m.sender }))]);
       const maxAgentId = history
         .filter((m) => m.sender === "agent")
         .reduce((max, m) => Math.max(max, m.id), 0);
       lastAgentIdRef.current = maxAgentId;
     });
-  }, [config]);
+  }, [config, fetchWelcomeMessage]);
 
   // Poll dinh ky: lay tin nhan moi cua nhan vien + trang thai phien (khi dang mo widget).
   const pollOnce = useCallback(async () => {
@@ -393,14 +429,22 @@ function App() {
 
       {/* Toggle Button */}
       <button
-        onClick={() => setIsOpen(!isOpen)}
+        onClick={() => {
+          setIsOpen(!isOpen);
+          setUnreadCount(0);
+        }}
         className={`${
           isOpen ? 'rotate-90 scale-90' : 'hover:scale-110'
-        } w-14 h-14 rounded-full text-white shadow-xl flex items-center justify-center transition-all duration-300 cursor-pointer`}
+        } w-14 h-14 rounded-full text-white shadow-xl flex items-center justify-center transition-all duration-300 cursor-pointer relative`}
         style={{ backgroundColor: settings.primary_color }}
         aria-label={isOpen ? "Đóng cửa sổ chat" : "Mở cửa sổ chat"}
       >
         {isOpen ? <X className="w-6 h-6" /> : <MessageSquare className="w-6 h-6" />}
+        {!isOpen && unreadCount > 0 && (
+          <span className="absolute -top-1 -right-1 flex h-6 w-6 items-center justify-center rounded-full bg-red-500 text-[11px] font-bold text-white shadow-lg animate-bounce">
+            {unreadCount}
+          </span>
+        )}
       </button>
     </div>
   );
