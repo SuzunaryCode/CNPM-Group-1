@@ -1,70 +1,44 @@
-# 6. User stories và tiêu chí nghiệm thu
+# 6. User Stories và Tiêu chí Nghiệm thu (Acceptance Criteria)
 
-## Knowledge Base
+## 1. Bản quyền & Thương mại hóa (Monetization & Licensing)
 
-**Là Admin**, tôi muốn nạp PDF/TXT/DOCX hoặc text để bot dùng tri thức riêng.
+**Là System Manager**, tôi muốn sinh mã License Key và quản lý tài khoản Doanh nghiệp để bán gói PRO.
+- Sinh key ngẫu nhiên CSPRNG định dạng `NOVA-XXXX-XXXX-XXXX-XXXX` kèm thời hạn.
+- Cấp phát key cho Doanh nghiệp hoặc thu hồi key chưa sử dụng.
+- Quản lý danh sách khách hàng và toggle gói FREE/PRO.
+- Sở hữu giao diện **Premium Dark Mode** độc quyền.
 
-- File tối đa 50 MB, rỗng/sai định dạng bị từ chối.
-- Summary hiển thị số document/chunk và metadata.
-- Preview hiển thị chunk, page nếu có.
-- Upload lại cùng filename thay thế dữ liệu cũ.
-- Xóa workspace xóa toàn bộ `knowledge_chunks` tương ứng trong Postgres.
+**Là Doanh nghiệp Admin**, tôi muốn kích hoạt mã PRO để không bị giới hạn tính năng.
+- Nhập mã Key trên trang Landing Page nâng cấp PRO (có QR Code hỗ trợ).
+- Kích hoạt xong, hệ thống tự động đổi sang giao diện **Premium Light Glassmorphic Mode**, ẩn toàn bộ quảng cáo và mở khóa các tab bị khóa mờ mà không cần F5.
 
-**Trạng thái:** Đã có automated test cho list/delete và UI cho upload/preview/text.
+---
 
-## RAG Chat
+## 2. Phân quyền 2 Tầng (2-Tier RBAC)
 
-**Là Customer**, tôi muốn thấy câu trả lời được stream và có nguồn.
+**Là Doanh nghiệp Admin**, tôi muốn mời Nhân viên CSKH (Agent) vào Workspace để hỗ trợ tư vấn.
+- Mời thành viên theo Email với vai trò `agent`.
+- Phân định rạch ròi: Nhân viên CSKH chỉ được truy cập tab **Hộp thoại (Omnibox)** để chat với khách, bị chặn khỏi các cài đặt Bot AI, nạp tri thức và quản trị Workspace.
 
-- POST SSE phát event `session`, `chunk`, `done` hoặc `error`.
-- `done` chứa `context_chunks` và `sources`.
-- Câu hỏi không có context đạt threshold chuyển session sang `waiting_human`.
-- Lịch sử tối đa 10 message được đưa vào prompt.
+**Là Nhân viên CSKH (Business Staff / Agent)**, tôi muốn tiếp quản cuộc chat khi AI không trả lời được.
+- Đăng nhập hệ thống được hướng trực tiếp tới tab **Hộp thoại (Omnibox)**.
+- Đọc lại toàn bộ lịch sử trò chuyện cũ của AI với khách hàng.
+- Thực hiện takeover độc quyền (khóa chống tranh chấp giữa 2 nhân viên) và bấm **Hoàn tất (Resolve)** để đóng ca.
 
-**Trạng thái:** Đã có test Chat API và Phase 4 guardrails/history/citations.
+---
 
-## Human Handoff
+## 3. Quản lý Tri thức & Cấu hình Bot (Knowledge Base & Bot Config)
 
-**Là Customer**, tôi muốn chủ động gặp nhân viên.
+**Là Doanh nghiệp Admin**, tôi muốn nạp tài liệu tiếng Việt có dấu và cấu hình tính cách cho Bot AI.
+- Nạp file PDF/TXT/DOCX tối đa 50 MB hoặc nhập văn bản trực tiếp.
+- Cấu hình **System Prompt** tiếng Việt có dấu chuẩn.
+- Cấu hình danh sách tên miền được phép nhúng widget (**Allowed Domains**).
 
-- Nút **Gặp nhân viên** tạo hoặc cập nhật session `waiting_human`.
-- Widget hiển thị trạng thái chờ và nhận tin Agent qua WebSocket/poll.
-- Sau timeout, system message fallback xuất hiện.
+---
 
-**Là Agent**, tôi muốn tiếp quản một cách độc quyền, trả lời và đóng ca.
+## 4. Hỏi đáp RAG & Trích dẫn (RAG Chat & Citations)
 
-- Agent phải là owner/member của workspace.
-- Hai Agent cạnh tranh: chỉ một người được assign, người còn lại nhận 409/403.
-- Chỉ Agent đã takeover mới reply.
-- Resolve chuyển session sang `resolved`; tin nhắn Customer tiếp theo có thể mở lại bot flow.
-
-**Trạng thái:** Đã có test handoff/takeover/reply/poll/resolve.
-
-## Notification
-
-**Là Agent**, tôi muốn được báo khi khách yêu cầu hỗ trợ.
-
-- Khi dashboard đang mở và đã cấp quyền, Omnibox phát âm thanh và Browser Notification.
-- WebSocket làm mới session; polling vẫn dùng làm fallback.
-
-**Trạng thái:** Hoàn thiện trong phạm vi tab đang mở. Service Worker/VAPID Web Push nền chưa có.
-
-## Workspace RBAC
-
-**Là Admin**, tôi muốn mời Agent và giới hạn quyền cấu hình.
-
-- Invitation gắn email, role, token và hạn 7 ngày.
-- Đúng email mới accept được.
-- Agent đọc/xử lý hội thoại nhưng bị chặn khỏi widget settings/member management.
-
-**Trạng thái:** Đã có automated test RBAC/invitation. Chưa gửi email tự động.
-
-## Widget Customization
-
-**Là Admin**, tôi muốn tùy chỉnh widget trước khi nhúng.
-
-- Màu HEX, tên bot, greeting, avatar URL và trái/phải được lưu.
-- Preview cập nhật theo dữ liệu nhập.
-- Widget public tải config bằng widget token.
-
-**Trạng thái:** Đã có. Upload asset avatar chưa có.
+**Là Khách mua hàng (Customer)**, tôi muốn nhận được câu trả lời chính xác từ AI có nguồn trích dẫn.
+- Khung chat stream câu trả lời theo thời gian thực (SSE).
+- Hiển thị nguồn trích dẫn minh bạch (tên file, trang, preview).
+- Nếu AI không có thông tin, AI tự động từ chối bịa đặt và hỗ trợ nút bấm **Gặp nhân viên hỗ trợ**.

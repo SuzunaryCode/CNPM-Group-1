@@ -1,36 +1,32 @@
-# 1. Giới thiệu sản phẩm
+# 1. Giới thiệu sản phẩm NovaChat AI
 
-Ngày cập nhật: **19/07/2026**.
+Ngày cập nhật: **06/08/2026**.
 
 ## NovaChat AI là gì?
 
-NovaChat AI là nền tảng chatbot RAG dành cho doanh nghiệp SME. Doanh nghiệp tạo workspace, nạp tài liệu riêng và nhúng widget vào website (dán 1 thẻ `<script>`, không cần chỉnh sửa gì thêm). AI tìm context trong tri thức đã nạp (embedding lưu trong Postgres), dùng Ollama/Groq/Gemini để sinh câu trả lời và chuyển hội thoại cho nhân viên khi context không đủ tin cậy hoặc khách chủ động yêu cầu. Có sẵn gói Freemium (giới hạn 50 tin/tháng) và License Key để nâng cấp PRO.
+NovaChat AI là nền tảng chatbot RAG tiên tiến dành cho doanh nghiệp SME. Doanh nghiệp dễ dàng tạo workspace, nạp tài liệu riêng (tiếng Việt có dấu chuẩn) và nhúng widget vào bất kỳ website nào (dán 1 thẻ `<script>` duy nhất, không cần cấu hình phức tạp). AI tìm kiếm context trong kho tri thức (lưu trong Postgres), sử dụng Ollama/Groq/Gemini để tự động phản hồi khách hàng và tự động chuyển cuộc hội thoại cho **Nhân viên CSKH (Agent)** khi tri thức không đủ hoặc khi khách hàng bấm chọn "Gặp nhân viên".
+
+Sản phẩm áp dụng mô hình kinh doanh **Freemium**:
+- **Gói FREE (Doanh nghiệp FREE):** Giới hạn 50 tin nhắn/tháng, dán nhãn watermark "Powered by NovaChat", chèn các banner quảng cáo giả lập (Canva Pro/Hosting), bị phủ cờ khóa mờ (glassmorphic lock screen) ở các tính năng cao cấp.
+- **Gói PRO (Doanh nghiệp PRO):** Không giới hạn tin nhắn, gỡ bỏ toàn bộ quảng cáo và watermark, mở khóa tính năng Khóa Domain, Tùy chỉnh giao diện Widget và Thống kê & Báo cáo nâng cao. Sở hữu giao diện **Premium Light Glassmorphic Mode** sang trọng.
+- **System Manager (Bên A):** Sở hữu giao diện **Premium Dark Mode** độc quyền để quản lý bản quyền, phát hành License Key và cấp phát gói dịch vụ.
 
 ## Luồng cốt lõi hiện đã có
 
-1. **Nạp tri thức:** Admin tải PDF, TXT, DOCX hoặc nhập text. Backend chia đoạn 600 ký tự, overlap 100, tạo Gemini embedding 768 chiều và lưu trực tiếp trong Postgres (bảng `knowledge_chunks`, cột JSON), có version riêng theo model embedding.
-2. **Hỏi đáp RAG:** Widget gửi câu hỏi bằng SSE. Backend ghép lịch sử user vào retrieval query, kết hợp semantic search (similarity Python trên embedding Postgres) với BM25 local bằng RRF, lọc confidence/prompt injection và bổ sung tối đa 10 tin nhắn gần nhất vào prompt.
-3. **Trích dẫn:** Câu trả lời trả kèm filename, chunk, page và preview khi metadata có sẵn.
-4. **Human Handoff:** Session chuyển qua `waiting_human`, Agent nhận trong Omnibox, trả lời và resolve; hết giờ chờ mà không ai nhận thì tự quay về bot và báo khách. Redis hỗ trợ lock/PubSub khi chạy nhiều instance.
-5. **Quản trị:** Dashboard quản lý workspace, thành viên (kể cả đổi role), Knowledge Base, Bot Config, hội thoại, thống kê, tài khoản và Admin Dashboard (License Key, plan, Staff) cho role toàn cục `ADMIN`.
+1. **Quản lý Bản quyền & Nâng cấp PRO (Monetization):** System Manager sinh mã License Key `NOVA-XXXX-XXXX-XXXX-XXXX`. Doanh nghiệp kích hoạt mã tại trang Landing Page nâng cấp PRO; hệ thống tự động cập nhật trạng thái giao diện và mở khóa tính năng tức thì (Reactive Refresh ngầm không cần F5).
+2. **Nạp tri thức & Phân tích:** Admin tải PDF, TXT, DOCX hoặc nhập văn bản trực tiếp (hỗ trợ tiếng Việt có dấu chuẩn). Backend chia đoạn 600 ký tự, overlap 100, tạo Gemini embedding 768 chiều và lưu trực tiếp trong Postgres.
+3. **Hỏi đáp RAG & Trích dẫn (Citations):** Widget gửi câu hỏi bằng SSE. Backend kết hợp semantic search trên Postgres với BM25 local qua RRF, chống hallucination và trả về câu trả lời kèm thông tin trích dẫn nguồn (tên file, trang, preview).
+4. **Tiếp quản hội thoại (Human Takeover) & Phân quyền 2 Tầng:** 
+   - **Tầng 1 (Toàn hệ thống):** `ADMIN` (System Manager) và `STAFF` (Trợ lý hệ thống của Bên A).
+   - **Tầng 2 (Workspace Doanh nghiệp):** `admin` (Chủ doanh nghiệp) và `agent` (Nhân viên CSKH của Bên B).
+   - Khi có yêu cầu kết nối, Nhân viên CSKH (`agent`) đăng nhập hệ thống sẽ tự động truy cập tab **Hộp thoại (Omnibox)** để đọc toàn bộ lịch sử trò chuyện cũ và tư vấn trực tiếp 1-1 với khách hàng.
+5. **Dán mã nhúng là chạy ngay:** Widget chạy dưới dạng **Shadow DOM** cách ly CSS với trang host, serve cùng origin với dashboard, chỉ cần 1 thẻ `<script>` duy nhất.
+
+---
 
 ## Nguyên tắc sản phẩm
 
-- **Tách biệt theo workspace:** mọi truy vấn SQL và embedding đều lọc theo `workspace_id`.
-- **Không giả định AI luôn đúng:** Context kém tin cậy sẽ chuyển sang người thay vì gọi LLM.
-- **Local-first, cloud fallback:** Ollama là mặc định; Groq/Gemini giúp demo cloud khi có API key.
-- **Khả năng tiếp quản:** Agent luôn đọc được lịch sử đã lưu trước khi phản hồi.
-- **Dán vào là chạy, không cần chỉnh:** widget serve cùng origin dashboard, CSS tự nhúng vào JS —
-  khách chỉ cần copy đúng 1 thẻ `<script>` từ trang cấu hình bot, không sửa gì thêm.
-
-## Phạm vi chưa hoàn tất
-
-- Chưa có Web Push nền bằng Service Worker/VAPID.
-- Chưa gửi email invitation tự động; dashboard tạo link mời để sao chép.
-- Avatar widget mới nhận URL, chưa upload file.
-- Chưa có hàng đợi ingestion nền; upload vẫn xử lý trong HTTP request.
-- Similarity trên Postgres tính bằng Python thuần, chưa có ANN index chuyên biệt — chấp nhận
-  được ở quy mô KB một SME hiện tại.
-- Google SSO chỉ hoạt động khi có credentials và callback domain hợp lệ.
-
-Trạng thái chi tiết nằm tại [12_Implementation_Status.md](12_Implementation_Status.md).
+- **Tách biệt theo workspace (Multi-tenancy):** Mọi truy vấn SQL và embedding đều lọc theo `workspace_id`.
+- **Phân định rạch ròi 2 tầng RBAC:** Tách biệt tuyệt đối giữa Quản trị hệ thống (Bên A) và Nhân viên tư vấn CSKH (Bên B).
+- **Trải nghiệm cao cấp (Premium UI/UX):** Phân tầng giao diện trực quan giữa Dark Mode (Admin hệ thống), Premium Light Glassmorphism (Doanh nghiệp PRO) và Basic Light (Doanh nghiệp FREE).
+- **Plug and Play:** Nhúng mã script đơn giản, hoạt động tức thì trên mọi nền tảng website (HTML, React, Next.js).

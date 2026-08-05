@@ -1,60 +1,32 @@
-# 9. Hành trình người dùng
+# 9. Hành trình người dùng (User Journeys)
 
-## 1. Admin: từ đăng ký tới bot đầu tiên
+## 1. Hành trình 1: System Manager (Cấp bản quyền & Quản lý)
 
-| Bước | Hành động hiện có | Phản hồi hệ thống | Điểm cần cải thiện |
+| Bước | Hành động | Phản hồi hệ thống | Giao diện |
 |---|---|---|---|
-| Đăng nhập | Email/password hoặc Google SSO | JWT lưu ở LocalStorage | Verify email, reset password |
-| Tạo workspace | Nhập tên workspace | Tạo prompt/token mặc định | Onboarding checklist |
-| Nạp tri thức | Upload PDF/TXT/DOCX hoặc text | Progress, chunk, embedding | Job queue, OCR, ETA thật |
-| Kiểm tra | Xem summary/preview, Test Bot | Hiển thị nội dung AI đã nạp | Evaluation set và quality score |
-| Cấu hình | Prompt, domain, màu, tên, greeting, avatar URL, vị trí | Live preview và lưu backend | Upload avatar, token rotation |
-| Nhúng | Sao chép script | Widget dùng workspace ID/token/API URL | CDN/versioning chính thức |
+| 1. Đăng nhập | Đăng nhập tài khoản `system_manager@novachat.vn` | Xác thực JWT và kiểm tra Role `ADMIN` | Chuyển sang **Premium Dark Mode** độc quyền |
+| 2. Sinh Key | Vào tab **Quản lý Licenses** -> Nhấn "Phát hành Key mới" | Tạo ra dãy mã CSPRNG `NOVA-XXXX-XXXX-XXXX-XXXX` | Hiển thị bảng danh sách Key với trạng thái `AVAILABLE` |
+| 3. Quản lý Doanh nghiệp | Vào tab **Khách hàng** | Xem danh sách Doanh nghiệp, đổi tên công ty hoặc nâng cấp plan thủ công | Cập nhật trực tiếp trên bảng dữ liệu |
 
-**Moment of truth:** Admin preview đúng tài liệu và Test Bot trả lời có nguồn. Không đặt SLA “30 giây” vì code chưa đo thời gian ingestion.
+---
 
-## 2. Customer: hỏi đáp và khôi phục session
+## 2. Hành trình 2: Doanh nghiệp Admin (Onboarding, Nâng cấp PRO & Nhúng Widget)
 
-1. Customer mở widget, không cần tài khoản.
-2. Widget tải config và lời chào.
-3. Câu hỏi được stream qua SSE; typing indicator hiển thị trước token đầu.
-4. Citation xuất hiện khi backend trả nguồn.
-5. `session_key` lưu LocalStorage; reload tải history.
-
-**Failure states:**
-
-- Ollama unavailable: widget hiển thị lỗi từ SSE.
-- Không có context đủ tin cậy: backend chuyển `waiting_human` và trả thông báo handoff.
-- WebSocket mất: polling vẫn lấy tin Agent/system.
-- Session cũ không tồn tại: widget bỏ key và bắt đầu lại.
-
-## 3. Customer và Agent: Human Handoff
-
-| Bước | Customer | Agent/Omnibox | Trạng thái |
+| Bước | Hành động | Phản hồi hệ thống | Giao diện |
 |---|---|---|---|
-| Request | Bấm **Gặp nhân viên** | Nhận WebSocket refresh | `waiting_human` |
-| Alert | Thấy đang kết nối | Âm thanh/Browser Notification nếu tab mở | `waiting_human` |
-| Takeover | Thấy nhân viên hỗ trợ | Agent nhận ca; lock chống tranh chấp | `human_handling` |
-| Reply | Nhận tin qua WebSocket/poll | Agent đọc history và trả lời | `human_handling` |
-| Resolve | Nhận trạng thái hoàn tất | Agent đóng ca | `resolved` |
+| 1. Tạo Workspace | Đăng ký/Đăng nhập -> Nhấn Tạo Workspace | Tạo workspace mới kèm System Prompt tiếng Việt chuẩn | Giao diện sáng cơ bản (gói FREE) có quảng cáo |
+| 2. Nạp tri thức | Upload file PDF/TXT/DOCX trong tab **Quản lý Tri thức** | Tách chunk, tạo Gemini embedding và lưu vào Postgres | Bảng danh sách tài liệu hiển thị số chunk/preview |
+| 3. Nâng cấp PRO | Bấm nút **Nâng cấp PRO 🚀** -> Nhập mã Key | Xác thực Key, chuyển plan thành `PRO`, gọi callback `onUserUpdated` | Tự động đổi sang **Premium Light Glassmorphic Mode**, ẩn quảng cáo, mở khóa tab mờ |
+| 4. Nhúng Widget | Cấu hình Khóa Domain -> Copy mã script 1 thẻ | Khung chat độc lập Shadow DOM khởi chạy trên website khách | Bong bóng chat hiển thị với số 1 chưa đọc nhấp nháy |
 
-Nếu quá 60 giây chưa takeover, widget nhận system fallback message. Đây không phải cam kết có Agent phản hồi trong 60 giây.
+---
 
-## 4. Agent: gia nhập workspace
+## 3. Hành trình 3: Khách hàng & Nhân viên CSKH (Human Handoff Flow)
 
-1. Admin tạo invitation và sao chép link.
-2. Agent đăng ký/đăng nhập đúng email.
-3. Agent accept invitation trước khi hết hạn 7 ngày.
-4. Agent vào Omnibox và xem workspace được cấp quyền.
-
-**Điểm ma sát:** link phải được gửi thủ công; chưa có email delivery hoặc trang quản trị lời mời chuyên sâu.
-
-## 5. Khoảng trống UX ưu tiên
-
-1. Web Push khi dashboard đóng.
-2. Invitation email và password recovery.
-3. Trạng thái ingestion dạng job có ETA/retry.
-4. Token rotation và hướng dẫn publish widget/CDN.
-5. Evaluation/feedback cho câu trả lời sai.
-6. Canned responses và SLA queue cho Agent.
-7. URL riêng/deep-link cho từng tab/session dashboard.
+| Bước | Hành động Khách hàng (Customer) | Hành động Nhân viên CSKH (Business Staff) | Trạng thái Session |
+|---|---|---|---|
+| 1. Hỏi đáp AI | Gõ câu hỏi trên Widget nhúng | — | `bot_handling` (AI stream câu trả lời có citation) |
+| 2. Yêu cầu hỗ trợ | Bấm nút **Gặp nhân viên hỗ trợ** | Omnibox phát âm thanh và nhận sự kiện realtime | `waiting_human` |
+| 3. Tiếp quản | Thấy thông báo "Đang kết nối nhân viên..." | Đăng nhập tài khoản `agent`, tự động mở tab **Hộp thoại**, bấm **Tiếp quản** | `human_handling` (Redis Lock ngăn tranh chấp) |
+| 4. Trò chuyện 1-1 | Nhận câu trả lời của nhân viên trên Widget | Đọc lịch sử AI chat trước đó và trả lời khách | `human_handling` (AI ngắt tự động trả lời) |
+| 5. Hoàn tất | Thấy thông báo cuộc chat hoàn tất | Bấm nút **Hoàn tất (Resolve)** để đóng ca | `resolved` |
