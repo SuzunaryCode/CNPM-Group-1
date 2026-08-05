@@ -15,7 +15,11 @@ interface CurrentUser {
 
 interface ApiErrorBody { detail?: string; }
 
-const SystemSettings = () => {
+interface SystemSettingsProps {
+  onUserUpdated?: () => void;
+}
+
+const SystemSettings: React.FC<SystemSettingsProps> = ({ onUserUpdated }) => {
   const [user, setUser] = useState<CurrentUser | null>(null);
   const [currentPassword, setCurrentPassword] = useState("");
   const [newPassword, setNewPassword] = useState("");
@@ -45,6 +49,7 @@ const SystemSettings = () => {
       setUser(response.data);
       localStorage.setItem("full_name", response.data.full_name || "");
       toast.success("Đã cập nhật tên hiển thị.");
+      onUserUpdated?.();
     } catch (error) {
       const detail = (error as AxiosError<ApiErrorBody>).response?.data?.detail;
       toast.error(detail || "Không thể cập nhật tên hiển thị.");
@@ -62,6 +67,7 @@ const SystemSettings = () => {
       setUser(response.data);
       setLicenseKey("");
       toast.success("Kích hoạt thành công! Tài khoản của bạn đã lên gói PRO.");
+      onUserUpdated?.();
     } catch (error) {
       const axiosError = error as AxiosError<ApiErrorBody>;
       const detail = axiosError.response?.data?.detail;

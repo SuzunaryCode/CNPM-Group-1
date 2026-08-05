@@ -81,12 +81,13 @@ const Dashboard = () => {
   const [searchQuery, setSearchQuery] = useState("");
   const [deleteConfirmId, setDeleteConfirmId] = useState<number | null>(null);
   const [userEmail] = useState(() => localStorage.getItem("email") || "admin@novachat.com");
-  const [userFullName] = useState(() => localStorage.getItem("full_name") || "");
+  const [userFullName, setUserFullName] = useState(() => localStorage.getItem("full_name") || "");
   const displayName = userFullName || userEmail;
   const [selectedKnowledgeWorkspaceId, setSelectedKnowledgeWorkspaceId] = useState<number | null>(null);
   const [sidebarOpen, setSidebarOpen] = useState(false);
   const [health, setHealth] = useState<HealthStatus | null>(null);
   const [currentUserRole, setCurrentUserRole] = useState<string | null>(null);
+  const [currentUserPlan, setCurrentUserPlan] = useState<string | null>(null);
   const isAdmin = currentUserRole === "ADMIN";
 
   const navigate = useNavigate();
@@ -135,6 +136,23 @@ const Dashboard = () => {
     };
   }, [fetchHealth]);
 
+  const fetchUserProfile = useCallback(async () => {
+    try {
+      const response = await api.get("/users/me");
+      setCurrentUserRole(response.data.role);
+      setCurrentUserPlan(response.data.plan);
+      if (response.data.full_name) {
+        setUserFullName(response.data.full_name);
+        localStorage.setItem("full_name", response.data.full_name);
+      }
+      if (response.data.role === "ADMIN") {
+        setActiveTab((current) => current === "dashboard" ? "admin_dashboard" : current);
+      }
+    } catch {
+      // ignore
+    }
+  }, []);
+
   useEffect(() => {
     const token = localStorage.getItem("token");
     if (!token) {
@@ -144,19 +162,11 @@ const Dashboard = () => {
 
     const timer = window.setTimeout(() => {
       void fetchWorkspaces();
-      void api
-        .get("/users/me")
-        .then((response) => {
-          setCurrentUserRole(response.data.role);
-          if (response.data.role === "ADMIN") {
-            setActiveTab((current) => current === "dashboard" ? "admin_dashboard" : current);
-          }
-        })
-        .catch(() => undefined);
+      void fetchUserProfile();
     }, 0);
 
     return () => window.clearTimeout(timer);
-  }, [fetchWorkspaces, navigate]);
+  }, [fetchWorkspaces, fetchUserProfile, navigate]);
 
   useEffect(() => {
     if (currentUserRole === "ADMIN") {
@@ -409,7 +419,7 @@ const Dashboard = () => {
               <div className="flex items-center space-x-1.5 mt-0.5">
                 <Shield className="h-3 w-3 text-indigo-600" />
                 <span className="text-[10px] font-bold uppercase text-slate-500">
-                  {currentUserRole === "ADMIN" ? "Super Admin" : "Quản trị viên"}
+                  {currentUserRole === "ADMIN" ? "Super Admin" : `Doanh nghiệp (${currentUserPlan || "FREE"})`}
                 </span>
               </div>
             </div>
@@ -470,7 +480,7 @@ const Dashboard = () => {
           ) : activeTab === 'analytics' ? (
             <Analytics workspaces={workspaces} />
           ) : activeTab === 'settings' ? (
-            <SystemSettings />
+            <SystemSettings onUserUpdated={fetchUserProfile} />
           ) : activeTab === 'admin' ? (
             <AdminDashboard />
           ) : activeTab.startsWith('admin_') ? (
