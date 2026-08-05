@@ -100,11 +100,27 @@ def ensure_user_schema() -> None:
             connection.execute(text("ALTER TABLE users ADD COLUMN plan VARCHAR"))
         if "full_name" not in user_columns:
             connection.execute(text("ALTER TABLE users ADD COLUMN full_name VARCHAR"))
+        if "company_name" not in user_columns:
+            connection.execute(text("ALTER TABLE users ADD COLUMN company_name VARCHAR"))
         connection.execute(text("UPDATE users SET plan = 'FREE' WHERE plan IS NULL"))
         connection.execute(text("UPDATE users SET role = 'ADMIN' WHERE role = 'admin'"))
         connection.execute(
             text("UPDATE users SET role = 'USER' WHERE role IS NULL OR role NOT IN ('ADMIN', 'STAFF')")
         )
+
+
+def ensure_license_schema() -> None:
+    """Add assigned_to_user_id/expires_at cho DB cu chua qua migration 20260804_05."""
+    inspector = inspect(engine)
+    if "license_keys" not in inspector.get_table_names():
+        return
+
+    license_columns = {column["name"] for column in inspector.get_columns("license_keys")}
+    with engine.begin() as connection:
+        if "assigned_to_user_id" not in license_columns:
+            connection.execute(text("ALTER TABLE license_keys ADD COLUMN assigned_to_user_id INTEGER"))
+        if "expires_at" not in license_columns:
+            connection.execute(text("ALTER TABLE license_keys ADD COLUMN expires_at TIMESTAMP"))
 
 
 def ensure_chat_session_schema() -> None:

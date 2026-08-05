@@ -13,6 +13,7 @@ from app.db.session import (
     DATABASE_IS_PERSISTENT,
     engine,
     ensure_chat_session_schema,
+    ensure_license_schema,
     ensure_user_schema,
     ensure_workspace_schema,
 )
@@ -31,6 +32,7 @@ configure_logging()
 Base.metadata.create_all(bind=engine)
 ensure_workspace_schema()
 ensure_user_schema()
+ensure_license_schema()
 ensure_chat_session_schema()
 
 app = FastAPI(
