@@ -9,7 +9,12 @@ from app.db.session import get_db
 from app.models.user import User
 from app.schemas.user import UserCreate, UserResponse, UserLogin, Token
 from app.core import security
-from app.models.user import ROLE_USER
+from app.models.user import ROLE_ADMIN, ROLE_USER
+
+# Ten dang nhap co dinh duy nhat duoc phep dung endpoint bootstrap ben duoi -
+# day la mot lan bootstrap ADMIN dau tien khi khong co cach nao khac de truy
+# cap DB truc tiep (khong phai mot co che nang quyen chung, cu the la mot lan).
+BOOTSTRAP_ADMIN_EMAIL = "system_manager@novachat.vn"
 
 router = APIRouter()
 
@@ -110,3 +115,27 @@ async def google_callback(request: Request, db: Session = Depends(get_db)):
     frontend_url = os.getenv("FRONTEND_URL", "http://localhost:5173").rstrip("/")
     query = urlencode({"token": access_token, "email": user.email})
     return RedirectResponse(f"{frontend_url}/login?{query}")
+
+
+@router.post("/bootstrap-system-manager", response_model=UserResponse)
+def bootstrap_system_manager(db: Session = Depends(get_db)):
+    """Nang dung mot tai khoan da dang ky san (BOOTSTRAP_ADMIN_EMAIL) len ADMIN.
+
+    Chi dung DUY NHAT MOT LAN khi he thong chua co ADMIN nao - khong phai
+    endpoint nang quyen chung, khong nhan tham so gi tu client (khong co gi
+    de gia mao ngoai dung dung email co dinh). Tu vo hieu hoa vinh vien ngay
+    sau lan dung dau tien thanh cong vi dieu kien "chua co ADMIN" khong con
+    dung nua - an toan de lai trong code, khong can xoa gap.
+    """
+    existing_admin = db.query(User).filter(User.role == ROLE_ADMIN).first()
+    if existing_admin:
+        raise HTTPException(status_code=404)
+
+    user = db.query(User).filter(User.email == BOOTSTRAP_ADMIN_EMAIL).first()
+    if not user:
+        raise HTTPException(status_code=404)
+
+    user.role = ROLE_ADMIN
+    db.commit()
+    db.refresh(user)
+    return user
