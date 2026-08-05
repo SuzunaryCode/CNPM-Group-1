@@ -262,7 +262,7 @@ const BotConfig: React.FC<BotConfigProps> = ({ workspaces, onWorkspacesChanged }
             </div>
 
             {/* Embed code */}
-            <div className="rounded-2xl border border-white/5 bg-slate-900/40 p-6 backdrop-blur-md">
+            <div className="rounded-2xl border border-white/5 bg-slate-900/40 p-6 backdrop-blur-md space-y-4">
               <div className="mb-4 flex items-center justify-between">
                 <h3 className="flex items-center space-x-2 text-lg font-bold text-white">
                   <Copy className="h-5 w-5 text-indigo-400" />
@@ -279,6 +279,48 @@ const BotConfig: React.FC<BotConfigProps> = ({ workspaces, onWorkspacesChanged }
               <pre className="overflow-x-auto rounded-xl border border-white/10 bg-slate-950 p-4 text-xs leading-relaxed text-emerald-300">
                 {embedSnippet}
               </pre>
+
+              {/* Hướng dẫn tích hợp chi tiết */}
+              <div className="mt-4 pt-4 border-t border-white/5 space-y-3.5">
+                <h4 className="text-xs font-bold text-indigo-400 uppercase tracking-wider">
+                  Hướng dẫn tích hợp nhanh (trong 1 nốt nhạc):
+                </h4>
+                
+                <div className="space-y-3 text-xs text-slate-350">
+                  <div className="flex gap-2.5">
+                    <span className="flex h-5 w-5 shrink-0 items-center justify-center rounded-full bg-indigo-500/10 text-indigo-400 font-bold border border-indigo-500/20">1</span>
+                    <p className="leading-relaxed">
+                      Nhấp vào nút <strong>"Sao chép"</strong> ở trên để lấy đoạn mã nhúng của riêng bạn.
+                    </p>
+                  </div>
+                  
+                  <div className="flex gap-2.5">
+                    <span className="flex h-5 w-5 shrink-0 items-center justify-center rounded-full bg-indigo-500/10 text-indigo-400 font-bold border border-indigo-500/20">2</span>
+                    <p className="leading-relaxed">
+                      Mở tệp mã nguồn HTML chính (ví dụ: <code className="text-indigo-300 bg-slate-950 px-1 py-0.5 rounded font-mono">index.html</code>) của dự án/website của bạn.
+                    </p>
+                  </div>
+
+                  <div className="flex gap-2.5">
+                    <span className="flex h-5 w-5 shrink-0 items-center justify-center rounded-full bg-indigo-500/10 text-indigo-400 font-bold border border-indigo-500/20">3</span>
+                    <div className="leading-relaxed flex-1">
+                      Dán đoạn mã đã copy vào ngay trước thẻ đóng <strong><code className="text-indigo-300 bg-slate-950 px-1.5 py-0.5 rounded font-mono">&lt;/body&gt;</code></strong> của trang web.
+                      <div className="mt-2 rounded-xl bg-slate-950 p-3 font-mono text-[10px] text-slate-500 border border-white/5 leading-normal">
+                        &nbsp;&nbsp;&lt;!-- Dán mã nhúng NovaChat vào đây --&gt;<br />
+                        &nbsp;&nbsp;&lt;script src="..." data-workspace-id="..."&gt;&lt;/script&gt;<br />
+                        <strong>&lt;/body&gt;</strong>
+                      </div>
+                    </div>
+                  </div>
+
+                  <div className="flex gap-2.5">
+                    <span className="flex h-5 w-5 shrink-0 items-center justify-center rounded-full bg-indigo-500/10 text-indigo-400 font-bold border border-indigo-500/20">4</span>
+                    <p className="leading-relaxed">
+                      Lưu lại và mở trang web của bạn. Bong bóng chatbot AI NovaChat (với hiệu ứng huy hiệu nhấp nháy chưa đọc) sẽ tự động triển khai thành công ngay lập tức!
+                    </p>
+                  </div>
+                </div>
+              </div>
             </div>
           </div>
 
