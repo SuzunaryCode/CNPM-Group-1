@@ -58,6 +58,7 @@ const BotConfig: React.FC<BotConfigProps> = ({ workspaces, onWorkspacesChanged }
   const [avatarUrl, setAvatarUrl] = useState(selectedWorkspace?.bot_avatar_url || "");
   const [widgetPosition, setWidgetPosition] = useState<"left" | "right">(selectedWorkspace?.widget_position || "right");
   const [isSavingWidget, setIsSavingWidget] = useState(false);
+  const [integrationTab, setIntegrationTab] = useState<"html" | "nextjs" | "react">("html");
 
   const handleWorkspaceChange = (e: React.ChangeEvent<HTMLSelectElement>) => {
     const nextId = e.target.value === "" ? "" : Number(e.target.value);
@@ -280,48 +281,112 @@ const BotConfig: React.FC<BotConfigProps> = ({ workspaces, onWorkspacesChanged }
                 {embedSnippet}
               </pre>
 
-              {/* Hướng dẫn tích hợp chi tiết */}
-              <div className="mt-4 pt-4 border-t border-white/5 space-y-3.5">
-                <h4 className="text-xs font-bold text-indigo-400 uppercase tracking-wider">
-                  Hướng dẫn tích hợp nhanh (trong 1 nốt nhạc):
-                </h4>
+              {/* Hướng dẫn tích hợp chi tiết dạng Tabs */}
+              <div className="mt-4 pt-4 border-t border-white/5 space-y-4">
+                <div className="flex items-center justify-between">
+                  <h4 className="text-xs font-bold text-indigo-400 uppercase tracking-wider">
+                    Hướng dẫn tích hợp theo nền tảng:
+                  </h4>
+                </div>
                 
-                <div className="space-y-3 text-xs text-slate-350">
-                  <div className="flex gap-2.5">
-                    <span className="flex h-5 w-5 shrink-0 items-center justify-center rounded-full bg-indigo-500/10 text-indigo-400 font-bold border border-indigo-500/20">1</span>
-                    <p className="leading-relaxed">
-                      Nhấp vào nút <strong>"Sao chép"</strong> ở trên để lấy đoạn mã nhúng của riêng bạn.
-                    </p>
-                  </div>
-                  
-                  <div className="flex gap-2.5">
-                    <span className="flex h-5 w-5 shrink-0 items-center justify-center rounded-full bg-indigo-500/10 text-indigo-400 font-bold border border-indigo-500/20">2</span>
-                    <p className="leading-relaxed">
-                      Mở tệp mã nguồn HTML chính (ví dụ: <code className="text-indigo-300 bg-slate-950 px-1 py-0.5 rounded font-mono">index.html</code>) của dự án/website của bạn.
-                    </p>
-                  </div>
+                {/* Tabs Selector */}
+                <div className="flex border-b border-white/5 pb-2">
+                  {(["html", "nextjs", "react"] as const).map((tab) => (
+                    <button
+                      key={tab}
+                      onClick={() => setIntegrationTab(tab)}
+                      className={`mr-4 pb-1 text-xs font-bold transition-all relative cursor-pointer ${
+                        integrationTab === tab
+                          ? "text-white after:absolute after:bottom-0 after:left-0 after:right-0 after:h-0.5 after:bg-indigo-500"
+                          : "text-slate-500 hover:text-slate-350"
+                      }`}
+                    >
+                      {tab === "html" && "HTML / WordPress"}
+                      {tab === "nextjs" && "Next.js (SSR)"}
+                      {tab === "react" && "React / Vue (SPA)"}
+                    </button>
+                  ))}
+                </div>
 
-                  <div className="flex gap-2.5">
-                    <span className="flex h-5 w-5 shrink-0 items-center justify-center rounded-full bg-indigo-500/10 text-indigo-400 font-bold border border-indigo-500/20">3</span>
-                    <div className="leading-relaxed flex-1">
-                      Dán đoạn mã đã copy vào ngay trước thẻ đóng <strong><code className="text-indigo-300 bg-slate-950 px-1.5 py-0.5 rounded font-mono">&lt;/body&gt;</code></strong> của trang web.
-                      <div className="mt-2 rounded-xl bg-slate-950 p-3 font-mono text-[10px] text-slate-500 border border-white/5 leading-normal">
-                        &nbsp;&nbsp;&lt;!-- Dán mã nhúng NovaChat vào đây --&gt;<br />
-                        &nbsp;&nbsp;&lt;script src="..." data-workspace-id="..."&gt;&lt;/script&gt;<br />
-                        <strong>&lt;/body&gt;</strong>
+                {/* Tab Contents */}
+                {integrationTab === "html" && (
+                  <div className="space-y-3 text-xs text-slate-350">
+                    <p className="leading-relaxed">
+                      Dành cho các trang web HTML truyền thống, tệp PHP hoặc các CMS như <strong>WordPress</strong> (thêm vào phần cuối của tệp footer/header):
+                    </p>
+                    <div className="flex gap-2.5">
+                      <span className="flex h-5 w-5 shrink-0 items-center justify-center rounded-full bg-indigo-500/10 text-indigo-400 font-bold border border-indigo-500/20">1</span>
+                      <p className="leading-relaxed">Nhấp nút <strong>"Sao chép"</strong> phía trên để lấy đoạn mã nhúng.</p>
+                    </div>
+                    <div className="flex gap-2.5">
+                      <span className="flex h-5 w-5 shrink-0 items-center justify-center rounded-full bg-indigo-500/10 text-indigo-400 font-bold border border-indigo-500/20">2</span>
+                      <div className="leading-relaxed flex-1">
+                        Dán mã nhúng vào ngay trước thẻ đóng <strong><code>&lt;/body&gt;</code></strong> của trang web.
+                        <div className="mt-2 rounded-xl bg-slate-950 p-3 font-mono text-[10px] text-slate-500 border border-white/5 leading-normal">
+                          &nbsp;&nbsp;&lt;!-- Dán mã nhúng NovaChat vào đây --&gt;<br />
+                          &nbsp;&nbsp;&lt;script src="..." data-workspace-id="..."&gt;&lt;/script&gt;<br />
+                          <strong>&lt;/body&gt;</strong>
+                        </div>
                       </div>
                     </div>
                   </div>
+                )}
 
-                  <div className="flex gap-2.5">
-                    <span className="flex h-5 w-5 shrink-0 items-center justify-center rounded-full bg-indigo-500/10 text-indigo-400 font-bold border border-indigo-500/20">4</span>
+                {integrationTab === "nextjs" && (
+                  <div className="space-y-3 text-xs text-slate-355">
                     <p className="leading-relaxed">
-                      Lưu lại và mở trang web của bạn. Bong bóng chatbot AI NovaChat (với hiệu ứng huy hiệu nhấp nháy chưa đọc) sẽ tự động triển khai thành công ngay lập tức!
+                      Dành cho ứng dụng sử dụng <strong>Next.js (App Router)</strong>, hãy dùng component <code className="text-indigo-350 font-mono">Script</code> tối ưu sẵn trong layout gốc (<code className="text-indigo-350 font-mono">app/layout.tsx</code>):
                     </p>
+                    <pre className="rounded-xl border border-white/10 bg-slate-950 p-4 text-[10px] leading-relaxed text-indigo-300 font-mono overflow-x-auto">
+{`import Script from 'next/script';
+
+export default function RootLayout({ children }) {
+  return (
+    <html lang="vi">
+      <body>
+        {children}
+        <Script
+          src="${widgetScriptUrl}"
+          data-workspace-id="${selectedWorkspace?.id}"
+          data-widget-token="${selectedWorkspace?.widget_token || ""}"
+          data-api-url="${apiBase}"
+          strategy="lazyOnload"
+        />
+      </body>
+    </html>
+  );
+}`}
+                    </pre>
                   </div>
-                </div>
+                )}
+
+                {integrationTab === "react" && (
+                  <div className="space-y-3 text-xs text-slate-355">
+                    <p className="leading-relaxed">
+                      Dành cho các Single Page App (SPA) như <strong>React / Vue / Angular</strong>. Bạn có thể tự động nhúng widget động thông qua Hook <code className="text-indigo-350">useEffect</code> ở component gốc:
+                    </p>
+                    <pre className="rounded-xl border border-white/10 bg-slate-950 p-4 text-[10px] leading-relaxed text-indigo-300 font-mono overflow-x-auto">
+{`import { useEffect } from 'react';
+
+// Thêm đoạn code này vào App.tsx hoặc Component gốc của bạn:
+useEffect(() => {
+  const script = document.createElement('script');
+  script.src = "${widgetScriptUrl}";
+  script.setAttribute('data-workspace-id', '${selectedWorkspace?.id}');
+  script.setAttribute('data-widget-token', '${selectedWorkspace?.widget_token || ""}');
+  script.setAttribute('data-api-url', '${apiBase}');
+  script.async = true;
+  document.body.appendChild(script);
+
+  return () => {
+    document.body.removeChild(script);
+  };
+}, []);`}
+                    </pre>
+                  </div>
+                )}
               </div>
-            </div>
+            </div>.
           </div>
 
           <section className="grid gap-6 rounded-lg border border-white/5 bg-slate-900/40 p-6 lg:col-span-2 lg:grid-cols-[1fr_360px]">
