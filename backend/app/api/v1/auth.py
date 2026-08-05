@@ -121,16 +121,14 @@ async def google_callback(request: Request, db: Session = Depends(get_db)):
 def bootstrap_system_manager(db: Session = Depends(get_db)):
     """Nang dung mot tai khoan da dang ky san (BOOTSTRAP_ADMIN_EMAIL) len ADMIN.
 
-    Chi dung DUY NHAT MOT LAN khi he thong chua co ADMIN nao - khong phai
-    endpoint nang quyen chung, khong nhan tham so gi tu client (khong co gi
-    de gia mao ngoai dung dung email co dinh). Tu vo hieu hoa vinh vien ngay
-    sau lan dung dau tien thanh cong vi dieu kien "chua co ADMIN" khong con
-    dung nua - an toan de lai trong code, khong can xoa gap.
+    Khong phai endpoint nang quyen chung: khong nhan tham so gi tu client,
+    chi tac dung len DUNG MOT email co dinh duoc hardcode trong code
+    (BOOTSTRAP_ADMIN_EMAIL) - khong co gi de client gia mao. Idempotent: goi
+    lai nhieu lan cung khong gay hai gi them (user do da la ADMIN roi).
+    Van con hoat dong ke ca khi he thong da co ADMIN khac tu truoc (bo dieu
+    kien "chua co ADMIN nao" ban dau vi thuc te da co 1 admin rieng tu truoc,
+    va nguoi dung van can them dung 1 tai khoan demo nay la ADMIN).
     """
-    existing_admin = db.query(User).filter(User.role == ROLE_ADMIN).first()
-    if existing_admin:
-        raise HTTPException(status_code=404)
-
     user = db.query(User).filter(User.email == BOOTSTRAP_ADMIN_EMAIL).first()
     if not user:
         raise HTTPException(status_code=404)
