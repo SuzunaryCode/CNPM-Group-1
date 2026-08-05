@@ -103,7 +103,7 @@ const AdminDashboard = () => {
   const generateKeys = async () => {
     setGenerating(true);
     try {
-      const payload: any = { count: keyCount };
+      const payload: Record<string, unknown> = { count: keyCount };
       if (keyExpiresDays !== "") {
         const d = new Date();
         d.setDate(d.getDate() + Number(keyExpiresDays));
@@ -140,8 +140,9 @@ const AdminDashboard = () => {
       setAssigningKeyId(null);
       setAssignTargetUserId("");
       loadStats();
-    } catch (err: any) {
-      toast.error(err.response?.data?.detail || "Không thể cấp phát Key.");
+    } catch (err) {
+      const error = err as { response?: { data?: { detail?: string } } };
+      toast.error(error.response?.data?.detail || "Không thể cấp phát Key.");
     }
   };
 
@@ -215,7 +216,7 @@ const AdminDashboard = () => {
         {subTabs.map(({ id, label, icon: Icon }) => (
           <button
             key={id}
-            onClick={() => setSubTab(id as any)}
+            onClick={() => setSubTab(id)}
             className={`inline-flex min-w-max cursor-pointer items-center gap-2 rounded-xl px-5 py-2.5 text-sm font-semibold transition-all ${
               subTab === id
                 ? "bg-indigo-600 text-white shadow-lg shadow-indigo-600/20"
