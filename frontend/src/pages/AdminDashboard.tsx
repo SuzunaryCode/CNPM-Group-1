@@ -1,5 +1,5 @@
 import { useCallback, useEffect, useState } from "react";
-import { KeyRound, Plus, ShieldCheck, Trash2, Users, Building, Calendar as CalendarIcon, Search, LayoutDashboard } from "lucide-react";
+import { KeyRound, Plus, ShieldCheck, Trash2, Users, Building, Calendar as CalendarIcon, Search, LayoutDashboard, Copy } from "lucide-react";
 import { toast } from "react-hot-toast";
 import api from "../services/api";
 
@@ -171,6 +171,11 @@ const AdminDashboard = ({ externalSubTab, hideHeaderAndTabs = false }: AdminDash
     }
   };
 
+  const copyCustomerId = (id: number) => {
+    void navigator.clipboard.writeText(String(id));
+    toast.success(`Đã copy Customer ID: ${id}`);
+  };
+
   const subTabs = [
     { id: "dashboard", label: "Tổng quan", icon: LayoutDashboard },
     { id: "customers", label: "Khách hàng", icon: Users },
@@ -318,6 +323,7 @@ const AdminDashboard = ({ externalSubTab, hideHeaderAndTabs = false }: AdminDash
             <table className="w-full text-left text-sm whitespace-nowrap">
               <thead className="bg-slate-950/80 text-xs uppercase tracking-wider text-slate-400 border-b border-slate-800/80">
                 <tr>
+                  <th className="px-6 py-4 font-bold text-slate-300">Customer ID</th>
                   <th className="px-6 py-4 font-bold text-slate-300">Khách hàng</th>
                   <th className="px-6 py-4 font-bold text-slate-300">Công ty</th>
                   <th className="px-6 py-4 font-bold text-slate-300">Vai trò / Gói</th>
@@ -327,6 +333,16 @@ const AdminDashboard = ({ externalSubTab, hideHeaderAndTabs = false }: AdminDash
               <tbody className="divide-y divide-slate-800/60 bg-slate-900/10">
                 {users.filter(u => u.role !== "STAFF").map((row) => (
                   <tr key={row.id} className="hover:bg-indigo-500/5 transition-colors duration-200">
+                    <td className="px-6 py-4">
+                      <button
+                        onClick={() => copyCustomerId(row.id)}
+                        title="Copy Customer ID"
+                        className="inline-flex items-center gap-1.5 rounded-md bg-slate-800 hover:bg-slate-700 border border-slate-700 px-2.5 py-1 text-xs font-mono font-bold text-slate-200 hover:text-white transition-colors cursor-pointer"
+                      >
+                        #{row.id}
+                        <Copy className="h-3 w-3 opacity-60" />
+                      </button>
+                    </td>
                     <td className="px-6 py-4">
                       <div className="font-semibold text-slate-100">{row.full_name || "—"}</div>
                       <div className="text-xs text-slate-400 mt-0.5">{row.email}</div>
@@ -374,7 +390,7 @@ const AdminDashboard = ({ externalSubTab, hideHeaderAndTabs = false }: AdminDash
                 ))}
                 {users.filter(u => u.role !== "STAFF").length === 0 && (
                   <tr>
-                    <td colSpan={4} className="px-6 py-8 text-center text-slate-500 font-medium">
+                    <td colSpan={5} className="px-6 py-8 text-center text-slate-500 font-medium">
                       Không tìm thấy khách hàng nào.
                     </td>
                   </tr>
