@@ -139,10 +139,6 @@ textarea {
   }
 }
 
-/* 1. An chatbot widget tren tat ca cac trang cua chính dự án NovaChat */
-#novachat-widget-root {
-  display: none !important;
-}
 
 /* 2. Sửa lỗi màu nền xanh nhạt của autofill trên Chrome/Edge */
 /* Chế độ tối (trang Đăng nhập) */
