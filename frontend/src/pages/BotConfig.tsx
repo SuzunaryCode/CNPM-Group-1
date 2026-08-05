@@ -1,6 +1,6 @@
 import React, { useState } from "react";
 import type { AxiosError } from "axios";
-import { Bot, Check, Copy, Globe, KeyRound, Palette, ShieldCheck, Sparkles } from "lucide-react";
+import { Bot, Check, Copy, Globe, KeyRound, Palette, ShieldCheck, Sparkles, Lock } from "lucide-react";
 import { toast } from "react-hot-toast";
 import api from "../services/api";
 
@@ -34,7 +34,14 @@ const getApiErrorDetail = (error: unknown) => {
   return axiosError.response?.data?.detail;
 };
 
-const BotConfig: React.FC<BotConfigProps> = ({ workspaces, onWorkspacesChanged }) => {
+interface BotConfigProps {
+  workspaces: Workspace[];
+  onWorkspacesChanged?: () => Promise<void> | void;
+  currentUserPlan?: string | null;
+  onTabChange?: (tab: string) => void;
+}
+
+const BotConfig: React.FC<BotConfigProps> = ({ workspaces, onWorkspacesChanged, currentUserPlan, onTabChange }) => {
   const [selectedWorkspaceId, setSelectedWorkspaceId] = useState<number | "">(
     workspaces.length > 0 ? workspaces[0].id : ""
   );
@@ -233,7 +240,16 @@ const BotConfig: React.FC<BotConfigProps> = ({ workspaces, onWorkspacesChanged }
             </div>
 
             {/* Domain lock */}
-            <div className="rounded-2xl border border-white/5 bg-slate-900/40 p-6 backdrop-blur-md">
+            <div className="relative overflow-hidden rounded-2xl border border-white/5 bg-slate-900/40 p-6 backdrop-blur-md">
+              {currentUserPlan === "FREE" && (
+                <div className="absolute inset-0 bg-slate-950/75 backdrop-blur-sm z-20 flex flex-col items-center justify-center text-center p-4">
+                  <Lock className="h-6 w-6 text-amber-400 mb-1.5" />
+                  <h4 className="text-xs font-bold text-white uppercase tracking-wider">Khóa Domain (PRO)</h4>
+                  <p className="text-[10px] text-slate-400 mt-1 max-w-xs leading-normal">
+                    Nâng cấp lên gói PRO để khóa domain của widget, ngăn người khác copy mã nhúng.
+                  </p>
+                </div>
+              )}
               <h3 className="mb-4 flex items-center space-x-2 text-lg font-bold text-white">
                 <ShieldCheck className="h-5 w-5 text-indigo-400" />
                 <span>Khóa Domain (tùy chọn)</span>
@@ -389,7 +405,22 @@ useEffect(() => {
             </div>.
           </div>
 
-          <section className="grid gap-6 rounded-lg border border-white/5 bg-slate-900/40 p-6 lg:col-span-2 lg:grid-cols-[1fr_360px]">
+          <section className="relative overflow-hidden grid gap-6 rounded-lg border border-white/5 bg-slate-900/40 p-6 lg:col-span-2 lg:grid-cols-[1fr_360px]">
+            {currentUserPlan === "FREE" && (
+              <div className="absolute inset-0 bg-slate-950/80 backdrop-blur-sm z-20 flex flex-col items-center justify-center text-center p-6">
+                <Sparkles className="h-10 w-10 text-indigo-400 mb-2.5 animate-pulse" />
+                <h4 className="text-sm font-bold text-white uppercase tracking-wider">Tùy biến giao diện (PRO)</h4>
+                <p className="text-xs text-slate-400 mt-1 max-w-sm leading-relaxed">
+                  Thay đổi màu chủ đạo, tên Bot, lời chào, ảnh đại diện, vị trí hiển thị và loại bỏ nhãn "Powered by NovaChat" trên widget của bạn.
+                </p>
+                <button 
+                  onClick={() => onTabChange?.("upgrade")}
+                  className="mt-4 rounded-xl bg-gradient-to-r from-indigo-500 to-purple-500 px-5 py-2.5 text-xs font-bold text-white hover:from-indigo-600 hover:to-purple-600 transition cursor-pointer shadow-md shadow-indigo-500/20"
+                >
+                  Nâng cấp lên PRO ngay 🚀
+                </button>
+              </div>
+            )}
             <div>
               <h3 className="flex items-center gap-2 text-lg font-bold text-white"><Palette className="h-5 w-5 text-indigo-400" /> Tùy chỉnh Widget</h3>
               <div className="mt-5 grid gap-4 sm:grid-cols-2">
