@@ -27,10 +27,11 @@ import {
   Activity,
   Shield,
   ShieldAlert,
-  ShieldCheck,
   MessagesSquare,
   Menu,
-  X
+  X,
+  Users,
+  KeyRound
 } from "lucide-react";
 
 interface Workspace {
@@ -86,6 +87,7 @@ const Dashboard = () => {
   const [sidebarOpen, setSidebarOpen] = useState(false);
   const [health, setHealth] = useState<HealthStatus | null>(null);
   const [currentUserRole, setCurrentUserRole] = useState<string | null>(null);
+  const isAdmin = currentUserRole === "ADMIN";
 
   const navigate = useNavigate();
 
@@ -144,12 +146,30 @@ const Dashboard = () => {
       void fetchWorkspaces();
       void api
         .get("/users/me")
-        .then((response) => setCurrentUserRole(response.data.role))
+        .then((response) => {
+          setCurrentUserRole(response.data.role);
+          if (response.data.role === "ADMIN") {
+            setActiveTab((current) => current === "dashboard" ? "admin_dashboard" : current);
+          }
+        })
         .catch(() => undefined);
     }, 0);
 
     return () => window.clearTimeout(timer);
   }, [fetchWorkspaces, navigate]);
+
+  useEffect(() => {
+    if (currentUserRole === "ADMIN") {
+      const styleEl = document.createElement("style");
+      styleEl.id = "hide-widget-for-admin";
+      styleEl.innerHTML = "#novachat-widget-root { display: none !important; }";
+      document.head.appendChild(styleEl);
+      return () => {
+        const el = document.getElementById("hide-widget-for-admin");
+        el?.remove();
+      };
+    }
+  }, [currentUserRole]);
 
   const handleCreateWorkspace = async (e: React.FormEvent) => {
     e.preventDefault();
@@ -217,7 +237,7 @@ const Dashboard = () => {
   );
 
   return (
-    <div className="novachat-light flex min-h-screen overflow-hidden bg-[#f6f7f9] font-sans text-slate-900">
+    <div className={`flex min-h-screen overflow-hidden font-sans ${isAdmin ? "novachat-dark bg-slate-950 text-slate-100" : "novachat-light bg-[#f6f7f9] text-slate-900"}`}>
       <Toaster position="top-right" />
 
       {sidebarOpen && (
@@ -229,143 +249,175 @@ const Dashboard = () => {
       )}
 
       {/* 1. Sidebar bên trái (Đóng vai trò điều hướng cao cấp) */}
-      <aside className={`fixed inset-y-0 left-0 z-40 flex w-64 shrink-0 flex-col justify-between border-r border-slate-200 bg-white p-4 shadow-xl transition-transform lg:static lg:translate-x-0 lg:shadow-none ${sidebarOpen ? "translate-x-0" : "-translate-x-full"}`}>
+      <aside className={`fixed inset-y-0 left-0 z-40 flex w-64 shrink-0 flex-col justify-between border-r p-4 transition-transform lg:static lg:translate-x-0 ${sidebarOpen ? "translate-x-0" : "-translate-x-full"} ${isAdmin ? "border-slate-800 bg-slate-900 shadow-none text-slate-100" : "border-slate-200 bg-white shadow-xl lg:shadow-none"}`}>
         <div>
           {/* Logo brand */}
           <div className="mb-8 flex items-center justify-between px-2 pt-1">
             <div className="flex items-center gap-3">
-            <img src="/favicon.png" alt="NovaChat Logo" className="h-10 w-10 object-contain" />
+            <img src="/favicon.png" alt="NovaChat Logo" className="h-10 w-10 object-contain shadow-lg shadow-indigo-500/20" />
             <div>
-              <h2 className="text-base font-bold text-slate-900">NovaChat AI</h2>
-              <span className="text-[10px] font-bold uppercase text-indigo-600">Workspace Hub</span>
+              <h2 className={`text-base font-bold ${isAdmin ? "text-white bg-gradient-to-r from-white via-slate-200 to-slate-400 bg-clip-text text-transparent font-black tracking-wide" : "text-slate-900"}`}>NovaChat AI</h2>
+              <span className={`text-[10px] font-extrabold uppercase px-2 py-0.5 rounded-full ${isAdmin ? "text-indigo-400 bg-indigo-500/10 border border-indigo-500/20" : "text-indigo-600"}`}>
+                {currentUserRole === "ADMIN" ? "System Manager" : "Workspace Hub"}
+              </span>
             </div>
             </div>
-            <button onClick={() => setSidebarOpen(false)} aria-label="Đóng menu" className="rounded-md p-2 text-slate-500 hover:bg-slate-100 lg:hidden"><X className="h-4 w-4" /></button>
+            <button onClick={() => setSidebarOpen(false)} aria-label="Đóng menu" className={`rounded-md p-2 lg:hidden ${isAdmin ? "text-slate-400 hover:bg-slate-800" : "text-slate-500 hover:bg-slate-100"}`}><X className="h-4 w-4" /></button>
           </div>
 
           {/* Navigation Menu */}
           <nav className="space-y-1">
-            <button
-              onClick={() => selectTab("dashboard")}
-              className={`w-full flex items-center space-x-3 px-3 py-2.5 rounded-lg font-medium text-sm transition-colors cursor-pointer ${
-                activeTab === "dashboard"
-                  ? "bg-indigo-50 text-indigo-700"
-                  : "text-slate-600 hover:bg-slate-100 hover:text-slate-900"
-              }`}
-            >
-              <LayoutDashboard className="h-4 w-4" />
-              <span>Tổng quan</span>
-            </button>
+            {currentUserRole === "ADMIN" ? (
+              <>
+                <button
+                  onClick={() => selectTab("admin_dashboard")}
+                  className={`w-full flex items-center space-x-3 px-3 py-2.5 rounded-lg font-medium text-sm transition-all duration-300 transform cursor-pointer ${
+                    activeTab === "admin_dashboard"
+                      ? "bg-gradient-to-r from-indigo-500 to-violet-600 text-white shadow-lg shadow-indigo-500/20 border-l-4 border-indigo-400"
+                      : "text-slate-400 hover:bg-slate-800/50 hover:text-slate-100 hover:translate-x-1"
+                  }`}
+                >
+                  <LayoutDashboard className="h-4 w-4" />
+                  <span>Tổng quan hệ thống</span>
+                </button>
 
-            <button
-              onClick={() => selectTab("workspaces")}
-              className={`w-full flex items-center space-x-3 px-3 py-2.5 rounded-lg font-medium text-sm transition-colors cursor-pointer ${
-                activeTab === "workspaces"
-                  ? "bg-indigo-50 text-indigo-700"
-                  : "text-slate-600 hover:bg-slate-100 hover:text-slate-900"
-              }`}
-            >
-              <FolderKanban className="h-4 w-4" />
-              <span>Không gian làm việc</span>
-            </button>
+                <button
+                  onClick={() => selectTab("admin_customers")}
+                  className={`w-full flex items-center space-x-3 px-3 py-2.5 rounded-lg font-medium text-sm transition-all duration-300 transform cursor-pointer ${
+                    activeTab === "admin_customers"
+                      ? "bg-gradient-to-r from-indigo-500 to-violet-600 text-white shadow-lg shadow-indigo-500/20 border-l-4 border-indigo-400"
+                      : "text-slate-400 hover:bg-slate-800/50 hover:text-slate-100 hover:translate-x-1"
+                  }`}
+                >
+                  <Users className="h-4 w-4" />
+                  <span>Quản lý khách hàng</span>
+                </button>
 
-            <button
-              onClick={() => selectTab("bot")}
-              className={`w-full flex items-center space-x-3 px-3 py-2.5 rounded-lg font-medium text-sm transition-colors cursor-pointer ${
-                activeTab === "bot"
-                  ? "bg-indigo-50 text-indigo-700"
-                  : "text-slate-600 hover:bg-slate-100 hover:text-slate-900"
-              }`}
-            >
-              <Bot className="h-4 w-4" />
-              <span>Cấu hình Bot AI</span>
-            </button>
+                <button
+                  onClick={() => selectTab("admin_license")}
+                  className={`w-full flex items-center space-x-3 px-3 py-2.5 rounded-lg font-medium text-sm transition-all duration-300 transform cursor-pointer ${
+                    activeTab === "admin_license"
+                      ? "bg-gradient-to-r from-indigo-500 to-violet-600 text-white shadow-lg shadow-indigo-500/20 border-l-4 border-indigo-400"
+                      : "text-slate-400 hover:bg-slate-800/50 hover:text-slate-100 hover:translate-x-1"
+                  }`}
+                >
+                  <KeyRound className="h-4 w-4" />
+                  <span>Quản lý Licenses</span>
+                </button>
+              </>
+            ) : (
+              <>
+                <button
+                  onClick={() => selectTab("dashboard")}
+                  className={`w-full flex items-center space-x-3 px-3 py-2.5 rounded-lg font-medium text-sm transition-colors cursor-pointer ${
+                    activeTab === "dashboard"
+                      ? "bg-indigo-50 text-indigo-700"
+                      : "text-slate-600 hover:bg-slate-100 hover:text-slate-900"
+                  }`}
+                >
+                  <LayoutDashboard className="h-4 w-4" />
+                  <span>Tổng quan</span>
+                </button>
 
-            <button
-              onClick={() => {
-                setSelectedKnowledgeWorkspaceId(null);
-                selectTab("knowledge");
-              }}
-              className={`w-full flex items-center space-x-3 px-3 py-2.5 rounded-lg font-medium text-sm transition-colors cursor-pointer ${
-                activeTab === "knowledge"
-                  ? "bg-indigo-50 text-indigo-700"
-                  : "text-slate-600 hover:bg-slate-100 hover:text-slate-900"
-              }`}
-            >
-              <ShieldAlert className="h-4 w-4" />
-              <span>Quản lý Tri thức</span>
-            </button>
+                <button
+                  onClick={() => selectTab("workspaces")}
+                  className={`w-full flex items-center space-x-3 px-3 py-2.5 rounded-lg font-medium text-sm transition-colors cursor-pointer ${
+                    activeTab === "workspaces"
+                      ? "bg-indigo-50 text-indigo-700"
+                      : "text-slate-600 hover:bg-slate-100 hover:text-slate-900"
+                  }`}
+                >
+                  <FolderKanban className="h-4 w-4" />
+                  <span>Không gian làm việc</span>
+                </button>
 
-            <button
-              onClick={() => selectTab("omnibox")}
-              className={`w-full flex items-center space-x-3 px-3 py-2.5 rounded-lg font-medium text-sm transition-colors cursor-pointer ${
-                activeTab === "omnibox"
-                  ? "bg-indigo-50 text-indigo-700"
-                  : "text-slate-600 hover:bg-slate-100 hover:text-slate-900"
-              }`}
-            >
-              <MessagesSquare className="h-4 w-4" />
-              <span>Hộp thoại</span>
-            </button>
+                <button
+                  onClick={() => selectTab("bot")}
+                  className={`w-full flex items-center space-x-3 px-3 py-2.5 rounded-lg font-medium text-sm transition-colors cursor-pointer ${
+                    activeTab === "bot"
+                      ? "bg-indigo-50 text-indigo-700"
+                      : "text-slate-600 hover:bg-slate-100 hover:text-slate-900"
+                  }`}
+                >
+                  <Bot className="h-4 w-4" />
+                  <span>Cấu hình Bot AI</span>
+                </button>
 
-            <button
-              onClick={() => selectTab("analytics")}
-              className={`w-full flex items-center space-x-3 px-3 py-2.5 rounded-lg font-medium text-sm transition-colors cursor-pointer ${
-                activeTab === "analytics"
-                  ? "bg-indigo-50 text-indigo-700"
-                  : "text-slate-600 hover:bg-slate-100 hover:text-slate-900"
-              }`}
-            >
-              <BarChart3 className="h-4 w-4" />
-              <span>Thống kê & Báo cáo</span>
-            </button>
+                <button
+                  onClick={() => {
+                    setSelectedKnowledgeWorkspaceId(null);
+                    selectTab("knowledge");
+                  }}
+                  className={`w-full flex items-center space-x-3 px-3 py-2.5 rounded-lg font-medium text-sm transition-colors cursor-pointer ${
+                    activeTab === "knowledge"
+                      ? "bg-indigo-50 text-indigo-700"
+                      : "text-slate-600 hover:bg-slate-100 hover:text-slate-900"
+                  }`}
+                >
+                  <ShieldAlert className="h-4 w-4" />
+                  <span>Quản lý Tri thức</span>
+                </button>
 
-            <button
-              onClick={() => selectTab("settings")}
-              className={`w-full flex items-center space-x-3 px-3 py-2.5 rounded-lg font-medium text-sm transition-colors cursor-pointer ${
-                activeTab === "settings"
-                  ? "bg-indigo-50 text-indigo-700"
-                  : "text-slate-600 hover:bg-slate-100 hover:text-slate-900"
-              }`}
-            >
-              <Settings className="h-4 w-4" />
-              <span>Cài đặt hệ thống</span>
-            </button>
+                <button
+                  onClick={() => selectTab("omnibox")}
+                  className={`w-full flex items-center space-x-3 px-3 py-2.5 rounded-lg font-medium text-sm transition-colors cursor-pointer ${
+                    activeTab === "omnibox"
+                      ? "bg-indigo-50 text-indigo-700"
+                      : "text-slate-600 hover:bg-slate-100 hover:text-slate-900"
+                  }`}
+                >
+                  <MessagesSquare className="h-4 w-4" />
+                  <span>Hộp thoại</span>
+                </button>
 
-            {currentUserRole === "ADMIN" && (
-              <button
-                onClick={() => selectTab("admin")}
-                className={`w-full flex items-center space-x-3 px-3 py-2.5 rounded-lg font-medium text-sm transition-colors cursor-pointer ${
-                  activeTab === "admin"
-                    ? "bg-indigo-50 text-indigo-700"
-                    : "text-slate-600 hover:bg-slate-100 hover:text-slate-900"
-                }`}
-              >
-                <ShieldCheck className="h-4 w-4" />
-                <span>Quản trị hệ thống</span>
-              </button>
+                <button
+                  onClick={() => selectTab("analytics")}
+                  className={`w-full flex items-center space-x-3 px-3 py-2.5 rounded-lg font-medium text-sm transition-colors cursor-pointer ${
+                    activeTab === "analytics"
+                      ? "bg-indigo-50 text-indigo-700"
+                      : "text-slate-600 hover:bg-slate-100 hover:text-slate-900"
+                  }`}
+                >
+                  <BarChart3 className="h-4 w-4" />
+                  <span>Thống kê & Báo cáo</span>
+                </button>
+
+                <button
+                  onClick={() => selectTab("settings")}
+                  className={`w-full flex items-center space-x-3 px-3 py-2.5 rounded-lg font-medium text-sm transition-colors cursor-pointer ${
+                    activeTab === "settings"
+                      ? "bg-indigo-50 text-indigo-700"
+                      : "text-slate-600 hover:bg-slate-100 hover:text-slate-900"
+                  }`}
+                >
+                  <Settings className="h-4 w-4" />
+                  <span>Cài đặt hệ thống</span>
+                </button>
+              </>
             )}
           </nav>
         </div>
 
         {/* User profile & Logout */}
         <div className="space-y-4">
-          <div className="flex items-center space-x-3 rounded-lg border border-slate-200 bg-slate-50 p-3">
+          <div className={`flex items-center space-x-3 rounded-lg border p-3 ${isAdmin ? "border-slate-800 bg-slate-950" : "border-slate-200 bg-slate-50"}`}>
             <div className="flex h-9 w-9 items-center justify-center rounded-full bg-indigo-600 font-bold uppercase text-white">
               {displayName.charAt(0)}
             </div>
             <div className="overflow-hidden">
-              <p className="truncate text-xs font-semibold text-slate-800">{displayName}</p>
+              <p className={`truncate text-xs font-semibold ${isAdmin ? "text-slate-200" : "text-slate-800"}`}>{displayName}</p>
               <div className="flex items-center space-x-1.5 mt-0.5">
                 <Shield className="h-3 w-3 text-indigo-600" />
-                <span className="text-[10px] font-bold uppercase text-slate-500">Quản trị viên</span>
+                <span className="text-[10px] font-bold uppercase text-slate-500">
+                  {currentUserRole === "ADMIN" ? "Super Admin" : "Quản trị viên"}
+                </span>
               </div>
             </div>
           </div>
 
           <button
             onClick={handleLogout}
-            className="flex w-full cursor-pointer items-center justify-center space-x-2 rounded-lg px-4 py-2.5 text-sm font-semibold text-slate-600 transition-colors hover:bg-red-50 hover:text-red-600"
+            className={`flex w-full cursor-pointer items-center justify-center space-x-2 rounded-lg px-4 py-2.5 text-sm font-semibold transition-colors ${isAdmin ? "text-slate-400 hover:bg-red-500/10 hover:text-red-400" : "text-slate-600 hover:bg-red-50 hover:text-red-600"}`}
           >
             <LogOut className="h-4 w-4" />
             <span>Đăng xuất</span>
@@ -376,28 +428,30 @@ const Dashboard = () => {
       {/* 2. Main Content Area */}
       <main className="flex min-h-screen min-w-0 flex-1 flex-col overflow-y-auto">
         {/* Header bar */}
-        <div className="sticky top-0 z-20 flex items-center justify-between border-b border-slate-200 bg-white/95 px-4 py-3 backdrop-blur-sm sm:px-6">
+        <div className={`sticky top-0 z-20 flex items-center justify-between border-b px-4 py-3 backdrop-blur-sm sm:px-6 ${isAdmin ? "border-slate-800 bg-slate-900/90" : "border-slate-200 bg-white/95"}`}>
           <div className="flex items-center gap-3">
-            <button onClick={() => setSidebarOpen(true)} aria-label="Mở menu" className="rounded-md border border-slate-200 p-2 text-slate-600 hover:bg-slate-50 lg:hidden"><Menu className="h-4 w-4" /></button>
-          <div className="flex items-center space-x-2 text-xs font-medium text-slate-500">
-            <Calendar className="h-4 w-4 text-indigo-600" />
+            <button onClick={() => setSidebarOpen(true)} aria-label="Mở menu" className={`rounded-md border p-2 lg:hidden ${isAdmin ? "border-slate-800 text-slate-400 hover:bg-slate-800" : "border-slate-200 text-slate-600 hover:bg-slate-50"}`}><Menu className="h-4 w-4" /></button>
+          <div className={`flex items-center space-x-2 text-xs font-medium ${isAdmin ? "text-slate-400" : "text-slate-500"}`}>
+            <Calendar className={`h-4 w-4 ${isAdmin ? "text-indigo-400" : "text-indigo-600"}`} />
             <span>{getFormattedDate()}</span>
           </div>
           </div>
 
           {/* Search bar */}
-          <div className="relative hidden w-72 sm:block">
-            <span className="absolute inset-y-0 left-0 flex items-center pl-3.5 text-slate-500">
-              <Search className="h-4 w-4" />
-            </span>
-            <input
-              type="text"
-              placeholder="Tìm kiếm workspace..."
-              value={searchQuery}
-              onChange={(e) => setSearchQuery(e.target.value)}
-              className="w-full rounded-lg border border-slate-200 bg-slate-50 py-2 pl-10 pr-4 text-sm text-slate-900 outline-none transition-colors placeholder:text-slate-400 focus:border-indigo-500 focus:bg-white"
-            />
-          </div>
+          {!isAdmin && (
+            <div className="relative hidden w-72 sm:block">
+              <span className="absolute inset-y-0 left-0 flex items-center pl-3.5 text-slate-500">
+                <Search className="h-4 w-4" />
+              </span>
+              <input
+                type="text"
+                placeholder="Tìm kiếm workspace..."
+                value={searchQuery}
+                onChange={(e) => setSearchQuery(e.target.value)}
+                className="w-full rounded-lg border border-slate-200 bg-slate-50 py-2 pl-10 pr-4 text-sm text-slate-900 outline-none transition-colors placeholder:text-slate-400 focus:border-indigo-500 focus:bg-white"
+              />
+            </div>
+          )}
         </div>
 
         {/* Inner Content Container */}
@@ -419,6 +473,11 @@ const Dashboard = () => {
             <SystemSettings />
           ) : activeTab === 'admin' ? (
             <AdminDashboard />
+          ) : activeTab.startsWith('admin_') ? (
+            <AdminDashboard
+              externalSubTab={activeTab.substring(6) as "dashboard" | "customers" | "license"}
+              hideHeaderAndTabs={true}
+            />
           ) : activeTab === 'workspaces' ? (
             <WorkspaceManagement
               workspaces={workspaces}

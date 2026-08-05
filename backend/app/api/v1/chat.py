@@ -125,6 +125,77 @@ def public_widget_config(
     )
 
 
+@router.get("/{workspace_id}/welcome-message")
+def get_welcome_message(
+    workspace_id: int,
+    db: Session = Depends(get_db),
+    bearer_token: str | None = Depends(optional_oauth2),
+    x_widget_token: str | None = Header(default=None, alias="X-Widget-Token"),
+    origin: str | None = Header(default=None, alias="Origin"),
+):
+    import logging
+    logger = logging.getLogger(__name__)
+
+    workspace = get_workspace_or_404(workspace_id, db)
+    verify_chat_access(workspace, db, bearer_token, x_widget_token, origin)
+    
+    fallback_greeting = workspace.bot_greeting or "Xin chào! Mình là NovaChat AI. Mình có thể giúp gì cho bạn?"
+    
+    try:
+        embedding_model = get_embedding_model()
+        embedding_version = str(getattr(embedding_model, "collection_suffix", "unknown-v1"))
+        chunks = knowledge_store.get_workspace_chunks(
+            db, workspace_id, embedding_version=embedding_version
+        )
+    except Exception as exc:
+        logger.error(f"Error fetching workspace chunks for greeting: {exc}")
+        chunks = []
+        
+    if not chunks:
+        return {"welcome_message": fallback_greeting}
+        
+    context_chunks = []
+    seen_texts = set()
+    for chunk in chunks[:15]:
+        if chunk.content and chunk.content.strip():
+            txt = chunk.content.strip()
+            if txt not in seen_texts:
+                seen_texts.add(txt)
+                context_chunks.append(txt)
+                if len(context_chunks) >= 5:
+                    break
+                    
+    if not context_chunks:
+        return {"welcome_message": fallback_greeting}
+        
+    context_text = "\n\n".join(context_chunks)
+    
+    system_prompt = (
+        "Bạn là trợ lý ảo AI thông minh và thân thiện đại diện cho trang web/doanh nghiệp.\n"
+        "Hãy thực hiện các yêu cầu sau để tạo một tin nhắn chào mừng gửi đến khách hàng:\n"
+        "1. Chào mừng khách hàng một cách tự nhiên và hiếu khách.\n"
+        "2. Giới thiệu thật ngắn gọn và súc tích (khoảng 3-4 câu) giới thiệu cho khách hàng về nội dung trang web/dịch vụ của doanh nghiệp dựa vào tài liệu dưới đây.\n"
+        "3. Đưa ra 2-3 gợi ý câu hỏi mẫu thiết thực nhất mà khách hàng có thể đặt cho bạn liên quan đến dịch vụ của trang web (trình bày dưới dạng danh sách bullet points) để họ dễ dàng bắt đầu cuộc trò chuyện.\n"
+        "Hãy viết câu trả lời bằng Tiếng Việt, giọng điệu thân thiện, súc tích, định dạng markdown."
+    )
+    
+    user_prompt = (
+        f"Tài liệu giới thiệu về doanh nghiệp/trang web:\n{context_text}\n\n"
+        "Hãy viết tin nhắn chào mừng và gợi ý câu hỏi mẫu dựa vào tài liệu trên."
+    )
+    
+    try:
+        provider = get_llm_provider()
+        welcome_message = provider.generate(
+            system_prompt=system_prompt,
+            user_prompt=user_prompt,
+        )
+        return {"welcome_message": welcome_message}
+    except Exception as e:
+        logger.error(f"Error generating welcome message: {e}")
+        return {"welcome_message": fallback_greeting}
+
+
 def build_rag_prompt(question: str, context: str, conversation_history: str = "") -> str:
     return (
         "Hãy trả lời câu hỏi của khách hàng chỉ dựa trên phần <context>. "

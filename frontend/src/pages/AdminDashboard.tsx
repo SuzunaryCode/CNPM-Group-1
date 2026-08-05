@@ -1,5 +1,5 @@
 import { useCallback, useEffect, useState } from "react";
-import { KeyRound, Plus, ShieldCheck, Trash2, UserCog, Users, Building, Calendar as CalendarIcon, Search, LayoutDashboard } from "lucide-react";
+import { KeyRound, Plus, ShieldCheck, Trash2, Users, Building, Calendar as CalendarIcon, Search, LayoutDashboard } from "lucide-react";
 import { toast } from "react-hot-toast";
 import api from "../services/api";
 
@@ -42,8 +42,14 @@ const STATUS_STYLE: Record<string, string> = {
   EXPIRED: "bg-amber-500/10 text-amber-400 border border-amber-500/20",
 };
 
-const AdminDashboard = () => {
-  const [subTab, setSubTab] = useState<"dashboard" | "customers" | "license" | "staff">("dashboard");
+interface AdminDashboardProps {
+  externalSubTab?: "dashboard" | "customers" | "license";
+  hideHeaderAndTabs?: boolean;
+}
+
+const AdminDashboard = ({ externalSubTab, hideHeaderAndTabs = false }: AdminDashboardProps) => {
+  const [localSubTab, setLocalSubTab] = useState<"dashboard" | "customers" | "license">("dashboard");
+  const subTab = externalSubTab || localSubTab;
 
   const [stats, setStats] = useState<DashboardStats | null>(null);
 
@@ -60,11 +66,6 @@ const AdminDashboard = () => {
 
   const [assigningKeyId, setAssigningKeyId] = useState<number | null>(null);
   const [assignTargetUserId, setAssignTargetUserId] = useState("");
-
-  const [staffFullName, setStaffFullName] = useState("");
-  const [staffEmail, setStaffEmail] = useState("");
-  const [staffPassword, setStaffPassword] = useState("");
-  const [creatingStaff, setCreatingStaff] = useState(false);
 
   const loadStats = useCallback(async () => {
     try {
@@ -99,7 +100,7 @@ const AdminDashboard = () => {
      
     if (subTab === "license") void loadKeys();
      
-    if (subTab === "customers" || subTab === "staff") void loadUsers();
+    if (subTab === "customers") void loadUsers();
   }, [subTab, loadStats, loadKeys, loadUsers]);
 
   // Handle generation
@@ -170,145 +171,178 @@ const AdminDashboard = () => {
     }
   };
 
-  const createStaff = async (event: React.FormEvent) => {
-    event.preventDefault();
-    if (!staffFullName.trim() || !staffEmail.trim() || staffPassword.length < 8) {
-      toast.error("Cần họ tên, email hợp lệ và mật khẩu tối thiểu 8 ký tự.");
-      return;
-    }
-    setCreatingStaff(true);
-    try {
-      await api.post("/admin/staff", {
-        email: staffEmail.trim(),
-        password: staffPassword,
-        full_name: staffFullName.trim(),
-      });
-      toast.success("Đã tạo tài khoản Staff.");
-      setStaffFullName("");
-      setStaffEmail("");
-      setStaffPassword("");
-      void loadUsers();
-    } catch {
-      toast.error("Không thể tạo tài khoản Staff (email có thể đã tồn tại).");
-    } finally {
-      setCreatingStaff(false);
-    }
-  };
-
   const subTabs = [
     { id: "dashboard", label: "Tổng quan", icon: LayoutDashboard },
     { id: "customers", label: "Khách hàng", icon: Users },
     { id: "license", label: "Licenses", icon: KeyRound },
-    { id: "staff", label: "Staff", icon: UserCog },
   ] as const;
 
   return (
     <div className="space-y-8 pb-12">
-      <div>
-        <h1 className="flex items-center gap-3 text-3xl font-extrabold text-white">
-          <ShieldCheck className="h-8 w-8 text-indigo-400" />
-          <span>System Manager</span>
-        </h1>
-        <p className="mt-2 text-sm text-slate-400 max-w-2xl leading-relaxed">
-          Quản lý toàn diện tài nguyên hệ thống, danh sách khách hàng doanh nghiệp, phát hành và phân bổ License Key.
-        </p>
-      </div>
+      {!hideHeaderAndTabs && (
+        <>
+          <div>
+            <h1 className="flex items-center gap-3 text-3xl font-black text-white tracking-tight bg-gradient-to-r from-white via-slate-200 to-slate-400 bg-clip-text text-transparent">
+              <ShieldCheck className="h-8 w-8 text-indigo-400" />
+              <span>System Manager</span>
+            </h1>
+            <p className="mt-2 text-sm text-slate-400 max-w-2xl leading-relaxed">
+              Quản lý toàn diện tài nguyên hệ thống, danh sách khách hàng doanh nghiệp, phát hành và phân bổ License Key.
+            </p>
+          </div>
 
-      {/* Tabs */}
-      <div className="flex gap-2 overflow-x-auto border-b border-white/5 pb-2">
-        {subTabs.map(({ id, label, icon: Icon }) => (
-          <button
-            key={id}
-            onClick={() => setSubTab(id)}
-            className={`inline-flex min-w-max cursor-pointer items-center gap-2 rounded-xl px-5 py-2.5 text-sm font-semibold transition-all ${
-              subTab === id
-                ? "bg-indigo-600 text-white shadow-lg shadow-indigo-600/20"
-                : "bg-slate-900/30 text-slate-400 hover:bg-slate-800 hover:text-white"
-            }`}
-          >
-            <Icon className="h-4 w-4" />
-            {label}
-          </button>
-        ))}
-      </div>
+          {/* Tabs */}
+          <div className="flex gap-2 overflow-x-auto border-b border-slate-800 pb-2">
+            {subTabs.map(({ id, label, icon: Icon }) => (
+              <button
+                key={id}
+                onClick={() => setLocalSubTab(id)}
+                className={`inline-flex min-w-max cursor-pointer items-center gap-2 rounded-xl px-5 py-2.5 text-sm font-semibold transition-all duration-300 ${
+                  subTab === id
+                    ? "bg-gradient-to-r from-indigo-500 to-violet-600 text-white shadow-lg shadow-indigo-600/20"
+                    : "bg-slate-900/40 text-slate-400 hover:bg-slate-800 hover:text-white"
+                }`}
+              >
+                <Icon className="h-4 w-4" />
+                {label}
+              </button>
+            ))}
+          </div>
+        </>
+      )}
 
       {subTab === "dashboard" && (
-        <div className="space-y-6 animate-in fade-in slide-in-from-bottom-4 duration-500">
-          <div className="grid grid-cols-1 gap-5 sm:grid-cols-2 lg:grid-cols-5">
-            <div className="rounded-2xl border border-white/5 bg-slate-900/40 p-6 backdrop-blur-md relative overflow-hidden">
-               <div className="absolute top-0 right-0 p-4 opacity-10"><KeyRound size={64}/></div>
-               <p className="text-sm font-medium text-slate-400 mb-1">Tổng Licenses</p>
-               <h3 className="text-3xl font-bold text-white">{stats?.total_licenses ?? "-"}</h3>
+        <div className="space-y-8 animate-in fade-in slide-in-from-bottom-4 duration-500">
+          {hideHeaderAndTabs && (
+            <div>
+              <h2 className="text-2xl font-black text-white tracking-tight bg-gradient-to-r from-white via-slate-200 to-slate-400 bg-clip-text text-transparent">
+                Tổng quan hệ thống
+              </h2>
+              <p className="text-xs text-slate-400 mt-1">Báo cáo tài nguyên, hoạt động của Licenses và khách hàng doanh nghiệp.</p>
             </div>
-            <div className="rounded-2xl border border-emerald-500/20 bg-emerald-500/10 p-6 backdrop-blur-md relative overflow-hidden">
-               <p className="text-sm font-medium text-emerald-400/80 mb-1">Đang kích hoạt (Active)</p>
-               <h3 className="text-3xl font-bold text-emerald-400">{stats?.active_licenses ?? "-"}</h3>
+          )}
+
+          <div className="grid grid-cols-1 gap-6 sm:grid-cols-2 lg:grid-cols-5">
+            {/* Card 1: Tổng Licenses */}
+            <div className="group rounded-2xl border border-slate-850 bg-slate-900/40 p-6 backdrop-blur-xl relative overflow-hidden transition-all duration-300 hover:border-indigo-500/30 hover:-translate-y-1 hover:shadow-2xl hover:shadow-indigo-500/5">
+              <div className="absolute -right-4 -top-4 w-24 h-24 bg-indigo-500/10 rounded-full blur-2xl group-hover:bg-indigo-500/20 transition-all pointer-events-none"></div>
+              <div className="flex justify-between items-start mb-4">
+                <p className="text-xs font-semibold text-slate-400 uppercase tracking-wider">Tổng Licenses</p>
+                <div className="p-2 rounded-xl bg-indigo-500/10 text-indigo-400 border border-indigo-500/20 shadow-md">
+                  <KeyRound size={18} />
+                </div>
+              </div>
+              <h3 className="text-4xl font-extrabold text-white tracking-tight font-mono">{stats?.total_licenses ?? "-"}</h3>
             </div>
-            <div className="rounded-2xl border border-amber-500/20 bg-amber-500/10 p-6 backdrop-blur-md relative overflow-hidden">
-               <p className="text-sm font-medium text-amber-400/80 mb-1">Đã hết hạn (Expired)</p>
-               <h3 className="text-3xl font-bold text-amber-400">{stats?.expired_licenses ?? "-"}</h3>
+
+            {/* Card 2: Đang kích hoạt (Active) */}
+            <div className="group rounded-2xl border border-slate-850 bg-slate-900/40 p-6 backdrop-blur-xl relative overflow-hidden transition-all duration-300 hover:border-emerald-500/30 hover:-translate-y-1 hover:shadow-2xl hover:shadow-emerald-500/5">
+              <div className="absolute -right-4 -top-4 w-24 h-24 bg-emerald-500/10 rounded-full blur-2xl group-hover:bg-emerald-500/20 transition-all pointer-events-none"></div>
+              <div className="flex justify-between items-start mb-4">
+                <p className="text-xs font-semibold text-slate-400 uppercase tracking-wider">Đang kích hoạt</p>
+                <div className="p-2 rounded-xl bg-emerald-500/10 text-emerald-400 border border-emerald-500/20 shadow-md">
+                  <ShieldCheck size={18} />
+                </div>
+              </div>
+              <h3 className="text-4xl font-extrabold text-emerald-400 tracking-tight font-mono">{stats?.active_licenses ?? "-"}</h3>
             </div>
-            <div className="rounded-2xl border border-blue-500/20 bg-blue-500/10 p-6 backdrop-blur-md relative overflow-hidden">
-               <p className="text-sm font-medium text-blue-400/80 mb-1">Đã cấp phát (Assigned)</p>
-               <h3 className="text-3xl font-bold text-blue-400">{stats?.assigned_licenses ?? "-"}</h3>
+
+            {/* Card 3: Đã hết hạn (Expired) */}
+            <div className="group rounded-2xl border border-slate-850 bg-slate-900/40 p-6 backdrop-blur-xl relative overflow-hidden transition-all duration-300 hover:border-amber-500/30 hover:-translate-y-1 hover:shadow-2xl hover:shadow-amber-500/5">
+              <div className="absolute -right-4 -top-4 w-24 h-24 bg-amber-500/10 rounded-full blur-2xl group-hover:bg-amber-500/20 transition-all pointer-events-none"></div>
+              <div className="flex justify-between items-start mb-4">
+                <p className="text-xs font-semibold text-slate-400 uppercase tracking-wider">Đã hết hạn</p>
+                <div className="p-2 rounded-xl bg-amber-500/10 text-amber-400 border border-amber-500/20 shadow-md">
+                  <CalendarIcon size={18} />
+                </div>
+              </div>
+              <h3 className="text-4xl font-extrabold text-amber-400 tracking-tight font-mono">{stats?.expired_licenses ?? "-"}</h3>
             </div>
-            <div className="rounded-2xl border border-white/5 bg-slate-900/40 p-6 backdrop-blur-md relative overflow-hidden">
-               <div className="absolute top-0 right-0 p-4 opacity-10"><Building size={64}/></div>
-               <p className="text-sm font-medium text-slate-400 mb-1">Tổng khách hàng</p>
-               <h3 className="text-3xl font-bold text-white">{stats?.total_customers ?? "-"}</h3>
+
+            {/* Card 4: Đã cấp phát (Assigned) */}
+            <div className="group rounded-2xl border border-slate-850 bg-slate-900/40 p-6 backdrop-blur-xl relative overflow-hidden transition-all duration-300 hover:border-blue-500/30 hover:-translate-y-1 hover:shadow-2xl hover:shadow-blue-500/5">
+              <div className="absolute -right-4 -top-4 w-24 h-24 bg-blue-500/10 rounded-full blur-2xl group-hover:bg-blue-500/20 transition-all pointer-events-none"></div>
+              <div className="flex justify-between items-start mb-4">
+                <p className="text-xs font-semibold text-slate-400 uppercase tracking-wider">Đã cấp phát</p>
+                <div className="p-2 rounded-xl bg-blue-500/10 text-blue-400 border border-blue-500/20 shadow-md">
+                  <Building size={18} />
+                </div>
+              </div>
+              <h3 className="text-4xl font-extrabold text-blue-400 tracking-tight font-mono">{stats?.assigned_licenses ?? "-"}</h3>
+            </div>
+
+            {/* Card 5: Tổng khách hàng */}
+            <div className="group rounded-2xl border border-slate-850 bg-slate-900/40 p-6 backdrop-blur-xl relative overflow-hidden transition-all duration-300 hover:border-violet-500/30 hover:-translate-y-1 hover:shadow-2xl hover:shadow-violet-500/5">
+              <div className="absolute -right-4 -top-4 w-24 h-24 bg-violet-500/10 rounded-full blur-2xl group-hover:bg-violet-500/20 transition-all pointer-events-none"></div>
+              <div className="flex justify-between items-start mb-4">
+                <p className="text-xs font-semibold text-slate-400 uppercase tracking-wider">Tổng khách hàng</p>
+                <div className="p-2 rounded-xl bg-violet-500/10 text-violet-400 border border-violet-500/20 shadow-md">
+                  <Users size={18} />
+                </div>
+              </div>
+              <h3 className="text-4xl font-extrabold text-white tracking-tight font-mono">{stats?.total_customers ?? "-"}</h3>
             </div>
           </div>
         </div>
       )}
 
       {subTab === "customers" && (
-        <div className="space-y-5 animate-in fade-in slide-in-from-bottom-4 duration-500">
-          <div className="flex items-center gap-4">
-             <div className="relative flex-1 max-w-md">
-                <Search className="absolute left-3 top-1/2 -translate-y-1/2 text-slate-500 h-4 w-4"/>
-                <input
-                  type="text"
-                  placeholder="Tìm theo email, tên, tên công ty..."
-                  value={userSearch}
-                  onChange={(e) => setUserSearch(e.target.value)}
-                  onKeyDown={(e) => e.key === 'Enter' && loadUsers()}
-                  className="w-full rounded-xl border border-slate-700 bg-slate-900/50 py-2.5 pl-10 pr-4 text-sm text-white outline-none focus:border-indigo-500 focus:bg-slate-900"
-                />
-             </div>
-             <button onClick={loadUsers} className="rounded-xl bg-slate-800 px-4 py-2.5 text-sm font-semibold text-white hover:bg-slate-700 cursor-pointer">
-               Tìm kiếm
-             </button>
+        <div className="space-y-6 animate-in fade-in slide-in-from-bottom-4 duration-500">
+          <div className="flex flex-col sm:flex-row justify-between items-start sm:items-center gap-4">
+            <div>
+              <h2 className="text-2xl font-black text-white tracking-tight bg-gradient-to-r from-white via-slate-200 to-slate-400 bg-clip-text text-transparent">
+                Quản lý khách hàng
+              </h2>
+              <p className="text-xs text-slate-400 mt-1">Quản lý các tài khoản doanh nghiệp (Bên B), đổi nhanh thông tin công ty và cấu hình gói cước.</p>
+            </div>
+            
+            <div className="flex items-center gap-3 w-full sm:w-auto">
+               <div className="relative flex-1 sm:w-64 max-w-md">
+                  <Search className="absolute left-3.5 top-1/2 -translate-y-1/2 text-slate-500 h-4 w-4"/>
+                  <input
+                    type="text"
+                    placeholder="Tìm email, tên, công ty..."
+                    value={userSearch}
+                    onChange={(e) => setUserSearch(e.target.value)}
+                    onKeyDown={(e) => e.key === 'Enter' && loadUsers()}
+                    className="w-full rounded-xl border border-slate-800 bg-slate-900/50 py-2.5 pl-10 pr-4 text-sm text-white outline-none focus:border-indigo-500/50 focus:bg-slate-950 focus:ring-2 focus:ring-indigo-500/10 transition-all placeholder:text-slate-500"
+                  />
+               </div>
+               <button onClick={loadUsers} className="rounded-xl bg-indigo-600 hover:bg-indigo-500 px-5 py-2.5 text-sm font-bold text-white shadow-lg shadow-indigo-600/20 active:scale-[0.98] transition-all cursor-pointer">
+                 Tìm kiếm
+               </button>
+            </div>
           </div>
 
-          <div className="overflow-x-auto rounded-xl border border-white/5 shadow-2xl">
+          <div className="overflow-x-auto rounded-2xl border border-slate-800 bg-slate-900/20 shadow-2xl backdrop-blur-xl">
             <table className="w-full text-left text-sm whitespace-nowrap">
-              <thead className="bg-slate-900/80 text-xs uppercase tracking-wider text-slate-400 border-b border-white/5">
+              <thead className="bg-slate-950/80 text-xs uppercase tracking-wider text-slate-400 border-b border-slate-800/80">
                 <tr>
-                  <th className="px-5 py-4 font-semibold">Khách hàng</th>
-                  <th className="px-5 py-4 font-semibold">Công ty</th>
-                  <th className="px-5 py-4 font-semibold">Vai trò / Gói</th>
-                  <th className="px-5 py-4 font-semibold text-right">Thao tác</th>
+                  <th className="px-6 py-4 font-bold text-slate-300">Khách hàng</th>
+                  <th className="px-6 py-4 font-bold text-slate-300">Công ty</th>
+                  <th className="px-6 py-4 font-bold text-slate-300">Vai trò / Gói</th>
+                  <th className="px-6 py-4 font-bold text-right text-slate-300">Thao tác</th>
                 </tr>
               </thead>
-              <tbody className="divide-y divide-white/5 bg-slate-900/30">
+              <tbody className="divide-y divide-slate-800/60 bg-slate-900/10">
                 {users.filter(u => u.role !== "STAFF").map((row) => (
-                  <tr key={row.id} className="hover:bg-slate-800/30 transition-colors">
-                    <td className="px-5 py-4">
-                      <div className="font-semibold text-white">{row.full_name || "—"}</div>
+                  <tr key={row.id} className="hover:bg-indigo-500/5 transition-colors duration-200">
+                    <td className="px-6 py-4">
+                      <div className="font-semibold text-slate-100">{row.full_name || "—"}</div>
                       <div className="text-xs text-slate-400 mt-0.5">{row.email}</div>
                     </td>
-                    <td className="px-5 py-4">
+                    <td className="px-6 py-4 text-slate-200">
                       {editingUserId === row.id ? (
                         <div className="flex items-center gap-2">
                            <input 
                              autoFocus
                              value={editCompanyName}
                              onChange={(e) => setEditCompanyName(e.target.value)}
-                             className="rounded-lg bg-slate-950 border border-indigo-500/50 px-3 py-1.5 text-sm text-white outline-none"
+                             className="rounded-lg bg-slate-950 border border-indigo-500/50 px-3 py-1.5 text-sm text-white outline-none focus:ring-2 focus:ring-indigo-500/20"
                              placeholder="Nhập tên công ty..."
                            />
-                           <button onClick={() => saveCompany(row.id)} className="text-indigo-400 font-semibold text-xs hover:text-indigo-300">Lưu</button>
-                           <button onClick={() => setEditingUserId(null)} className="text-slate-400 font-semibold text-xs hover:text-slate-300">Hủy</button>
+                           <button onClick={() => saveCompany(row.id)} className="text-indigo-400 font-bold text-xs hover:text-indigo-300 transition-colors">Lưu</button>
+                           <button onClick={() => setEditingUserId(null)} className="text-slate-400 font-bold text-xs hover:text-slate-300 transition-colors">Hủy</button>
                         </div>
                       ) : (
                         <div className="flex items-center gap-2 group">
@@ -316,22 +350,22 @@ const AdminDashboard = () => {
                             <Building className="h-3.5 w-3.5 text-slate-500" />
                             {row.company_name || "—"}
                           </span>
-                          <button onClick={() => { setEditingUserId(row.id); setEditCompanyName(row.company_name || ""); }} className="opacity-0 group-hover:opacity-100 text-xs text-indigo-400 hover:underline">Sửa</button>
+                          <button onClick={() => { setEditingUserId(row.id); setEditCompanyName(row.company_name || ""); }} className="opacity-0 group-hover:opacity-100 text-xs text-indigo-400 hover:text-indigo-300 transition-opacity hover:underline">Sửa</button>
                         </div>
                       )}
                     </td>
-                    <td className="px-5 py-4">
+                    <td className="px-6 py-4">
                       <div className="flex items-center gap-2">
-                        <span className="rounded-md bg-slate-800 px-2 py-1 text-[10px] font-bold text-slate-300">{row.role}</span>
-                        <span className={`rounded-md px-2 py-1 text-[10px] font-bold ${row.plan === "PRO" ? "bg-violet-500/20 text-violet-400 border border-violet-500/30" : "bg-slate-800 text-slate-400 border border-slate-700"}`}>
+                        <span className="rounded-md bg-slate-800 px-2 py-0.5 text-[10px] font-bold text-slate-300 border border-slate-700">{row.role}</span>
+                        <span className={`rounded-md px-2 py-0.5 text-[10px] font-bold ${row.plan === "PRO" ? "bg-violet-500/20 text-violet-400 border border-violet-500/30" : "bg-slate-800 text-slate-400 border border-slate-700"}`}>
                           {row.plan}
                         </span>
                       </div>
                     </td>
-                    <td className="px-5 py-4 text-right">
+                    <td className="px-6 py-4 text-right">
                       <button
                         onClick={() => void updatePlan(row.id, row.plan === "PRO" ? "FREE" : "PRO")}
-                        className="cursor-pointer rounded-lg bg-slate-800 px-3 py-1.5 text-xs font-bold text-slate-300 hover:bg-slate-700 hover:text-white transition-colors"
+                        className="cursor-pointer rounded-lg bg-slate-800 hover:bg-slate-700 border border-slate-700 px-3 py-1.5 text-xs font-bold text-slate-200 hover:text-white transition-all active:scale-[0.98]"
                       >
                         Đổi sang {row.plan === "PRO" ? "FREE" : "PRO"}
                       </button>
@@ -340,7 +374,7 @@ const AdminDashboard = () => {
                 ))}
                 {users.filter(u => u.role !== "STAFF").length === 0 && (
                   <tr>
-                    <td colSpan={4} className="px-5 py-8 text-center text-slate-500">
+                    <td colSpan={4} className="px-6 py-8 text-center text-slate-500 font-medium">
                       Không tìm thấy khách hàng nào.
                     </td>
                   </tr>
@@ -353,111 +387,120 @@ const AdminDashboard = () => {
 
       {subTab === "license" && (
         <div className="space-y-6 animate-in fade-in slide-in-from-bottom-4 duration-500">
+          <div className="flex flex-col lg:flex-row justify-between items-start lg:items-center gap-4">
+            <div>
+              <h2 className="text-2xl font-black text-white tracking-tight bg-gradient-to-r from-white via-slate-200 to-slate-400 bg-clip-text text-transparent">
+                Quản lý License Keys
+              </h2>
+              <p className="text-xs text-slate-400 mt-1">Phát hành, phân bổ (assign) hoặc thu hồi các khóa bản quyền hệ thống.</p>
+            </div>
+          </div>
+
           {/* Controls */}
-          <div className="flex flex-col xl:flex-row gap-5 items-start xl:items-center justify-between p-5 rounded-2xl bg-slate-900/40 border border-white/5">
+          <div className="flex flex-col xl:flex-row gap-6 items-start xl:items-center justify-between p-6 rounded-2xl bg-slate-900/40 border border-slate-850 backdrop-blur-xl">
              <div className="flex flex-wrap items-center gap-4">
                 <div>
-                  <label className="block text-xs font-semibold text-slate-400 mb-1.5">Số lượng</label>
+                  <label className="block text-xs font-semibold text-slate-400 mb-1.5 uppercase tracking-wider">Số lượng</label>
                   <input
                     type="number"
                     min={1}
                     max={100}
                     value={keyCount}
                     onChange={(event) => setKeyCount(Math.min(100, Math.max(1, Number(event.target.value) || 1)))}
-                    className="w-24 rounded-lg border border-slate-700 bg-slate-950 px-3 py-2.5 text-sm font-semibold text-white outline-none focus:border-indigo-500"
+                    className="w-24 rounded-xl border border-slate-800 bg-slate-950 px-3.5 py-2.5 text-sm font-semibold text-white outline-none focus:border-indigo-500/50 focus:ring-2 focus:ring-indigo-500/10 transition-all"
                   />
                 </div>
                 <div>
-                  <label className="block text-xs font-semibold text-slate-400 mb-1.5">Thời hạn (ngày)</label>
+                  <label className="block text-xs font-semibold text-slate-400 mb-1.5 uppercase tracking-wider">Thời hạn (ngày)</label>
                   <input
                     type="number"
                     min={1}
-                    placeholder="Không viễn mãn"
+                    placeholder="Vĩnh viễn"
                     value={keyExpiresDays}
                     onChange={(event) => setKeyExpiresDays(event.target.value === "" ? "" : Number(event.target.value))}
-                    className="w-36 rounded-lg border border-slate-700 bg-slate-950 px-3 py-2.5 text-sm font-semibold text-white outline-none focus:border-indigo-500 placeholder:text-slate-600"
+                    className="w-36 rounded-xl border border-slate-800 bg-slate-950 px-3.5 py-2.5 text-sm font-semibold text-white outline-none focus:border-indigo-500/50 focus:ring-2 focus:ring-indigo-500/10 transition-all placeholder:text-slate-700"
                   />
                 </div>
-                <div className="pt-5">
+                <div className="pt-6">
                   <button
                     onClick={() => void generateKeys()}
                     disabled={generating}
-                    className="inline-flex cursor-pointer items-center gap-2 rounded-lg bg-indigo-600 px-5 py-2.5 text-sm font-bold text-white shadow-lg shadow-indigo-600/20 hover:bg-indigo-500 disabled:opacity-50 transition-all active:scale-[0.98]"
+                    className="inline-flex cursor-pointer items-center gap-2 rounded-xl bg-indigo-600 hover:bg-indigo-500 px-5 py-2.5 text-sm font-bold text-white shadow-lg shadow-indigo-600/20 disabled:opacity-50 transition-all active:scale-[0.98]"
                   >
                     <Plus className="h-4 w-4" />
-                    {generating ? "Đang xử lý..." : "Phát hành Key"}
+                    {generating ? "Đang tạo..." : "Phát hành Key"}
                   </button>
                 </div>
              </div>
 
-             <div className="flex items-center gap-3 w-full xl:w-auto">
+             <div className="flex items-center gap-3 w-full xl:w-auto pt-4 xl:pt-0 border-t xl:border-t-0 border-slate-800">
                 <div className="relative w-full xl:w-64">
-                  <Search className="absolute left-3 top-1/2 -translate-y-1/2 text-slate-500 h-4 w-4"/>
+                  <Search className="absolute left-3.5 top-1/2 -translate-y-1/2 text-slate-500 h-4 w-4"/>
                   <input 
                     type="text"
                     placeholder="Tra cứu mã Key..."
                     value={licenseSearch}
                     onChange={(e) => setLicenseSearch(e.target.value)}
                     onKeyDown={(e) => e.key === 'Enter' && loadKeys()}
-                    className="w-full rounded-lg border border-slate-700 bg-slate-950 py-2.5 pl-9 pr-3 text-sm text-white outline-none focus:border-indigo-500"
+                    className="w-full rounded-xl border border-slate-800 bg-slate-950 py-2.5 pl-10 pr-4 text-sm text-white outline-none focus:border-indigo-500/50 focus:ring-2 focus:ring-indigo-500/10 transition-all placeholder:text-slate-600"
                   />
                 </div>
-                <button onClick={loadKeys} className="rounded-lg bg-slate-800 px-4 py-2.5 text-sm font-semibold text-white hover:bg-slate-700 cursor-pointer">Lọc</button>
+                <button onClick={loadKeys} className="rounded-xl bg-slate-800 hover:bg-slate-700 border border-slate-750 px-4 py-2.5 text-sm font-semibold text-white active:scale-[0.98] transition-all cursor-pointer">Lọc</button>
              </div>
           </div>
 
-          <div className="overflow-x-auto rounded-xl border border-white/5 shadow-2xl">
+          <div className="overflow-x-auto rounded-2xl border border-slate-800 bg-slate-900/20 shadow-2xl backdrop-blur-xl">
             <table className="w-full text-left text-sm whitespace-nowrap">
-              <thead className="bg-slate-900/80 text-xs uppercase tracking-wider text-slate-400 border-b border-white/5">
+              <thead className="bg-slate-950/80 text-xs uppercase tracking-wider text-slate-400 border-b border-slate-800/80">
                 <tr>
-                  <th className="px-5 py-4 font-semibold">License Key</th>
-                  <th className="px-5 py-4 font-semibold">Trạng thái</th>
-                  <th className="px-5 py-4 font-semibold">Cấp phát cho</th>
-                  <th className="px-5 py-4 font-semibold">Hết hạn lúc</th>
-                  <th className="px-5 py-4 font-semibold text-right"></th>
+                  <th className="px-6 py-4 font-bold text-slate-300">License Key</th>
+                  <th className="px-6 py-4 font-bold text-slate-300">Trạng thái</th>
+                  <th className="px-6 py-4 font-bold text-slate-300">Cấp phát cho</th>
+                  <th className="px-6 py-4 font-bold text-slate-300">Hết hạn lúc</th>
+                  <th className="px-6 py-4 font-bold text-right text-slate-300">Thao tác</th>
                 </tr>
               </thead>
-              <tbody className="divide-y divide-white/5 bg-slate-900/30">
+              <tbody className="divide-y divide-slate-800/60 bg-slate-900/10">
                 {keys.map((row) => (
-                  <tr key={row.id} className="hover:bg-slate-800/30 transition-colors">
-                    <td className="px-5 py-4">
-                       <div className="font-mono font-bold text-white tracking-wide">{row.key}</div>
-                       <div className="text-[11px] text-slate-500 mt-1 flex items-center gap-1"><CalendarIcon className="h-3 w-3"/> Tạo lúc {new Date(row.created_at).toLocaleDateString("vi-VN")}</div>
+                  <tr key={row.id} className="hover:bg-indigo-500/5 transition-colors duration-200">
+                    <td className="px-6 py-4">
+                       <div className="font-mono font-bold text-slate-100 tracking-wide text-sm">{row.key}</div>
+                       <div className="text-[11px] text-slate-400 mt-1 flex items-center gap-1"><CalendarIcon className="h-3 w-3 text-indigo-400"/> Tạo lúc {new Date(row.created_at).toLocaleDateString("vi-VN")}</div>
                     </td>
-                    <td className="px-5 py-4">
+                    <td className="px-6 py-4">
                       <span className={`inline-flex items-center rounded-full px-2.5 py-1 text-[10px] font-bold uppercase tracking-wider ${STATUS_STYLE[row.status]}`}>
                         {row.status}
                       </span>
                     </td>
-                    <td className="px-5 py-4">
+                    <td className="px-6 py-4">
                        {row.used_by_email ? (
-                         <div className="text-emerald-400 text-xs font-semibold">Đã dùng bởi: {row.used_by_email}</div>
+                         <div className="text-emerald-400 text-xs font-semibold">Đã dùng: {row.used_by_email}</div>
                        ) : row.assigned_to_email ? (
-                         <div className="text-indigo-400 text-xs font-semibold">Đã cấp cho: {row.assigned_to_email}</div>
+                         <div className="text-indigo-400 text-xs font-semibold">Đã cấp: {row.assigned_to_email}</div>
                        ) : (
                          <span className="text-slate-500 text-xs italic">Chưa cấp phát</span>
                        )}
                     </td>
-                    <td className="px-5 py-4">
+                    <td className="px-6 py-4">
                       {row.expires_at ? (
                         <span className="text-slate-300 text-xs">{new Date(row.expires_at).toLocaleString("vi-VN")}</span>
                       ) : (
-                        <span className="text-emerald-500/50 text-xs font-semibold uppercase tracking-wider">Vĩnh viễn</span>
+                        <span className="text-emerald-500/70 text-xs font-bold uppercase tracking-wider bg-emerald-500/10 px-2 py-0.5 rounded border border-emerald-500/20">Vĩnh viễn</span>
                       )}
                     </td>
-                    <td className="px-5 py-4 text-right space-x-2">
+                    <td className="px-6 py-4 text-right space-x-2">
                       {row.status === "AVAILABLE" && (
                         <>
                           <button
                             onClick={() => setAssigningKeyId(row.id)}
-                            className="cursor-pointer rounded-lg bg-indigo-600/10 border border-indigo-500/20 px-3 py-1.5 text-xs font-bold text-indigo-400 hover:bg-indigo-600 hover:text-white transition-colors"
+                            className="cursor-pointer rounded-lg bg-indigo-600/10 border border-indigo-500/30 px-3 py-1.5 text-xs font-bold text-indigo-400 hover:bg-indigo-600 hover:text-white transition-all active:scale-[0.98]"
                           >
                             Cấp phát
                           </button>
                           <button
                             onClick={() => void revokeKey(row.id)}
                             title="Vô hiệu hóa key"
-                            className="cursor-pointer rounded-lg bg-slate-800/50 border border-slate-700/50 p-1.5 text-slate-400 hover:bg-red-500/20 hover:text-red-400 transition-colors"
+                            className="cursor-pointer rounded-lg bg-slate-800 hover:bg-red-500/20 border border-slate-700 p-1.5 text-slate-400 hover:text-red-400 transition-all active:scale-[0.98]"
                           >
                             <Trash2 className="h-4 w-4" />
                           </button>
@@ -468,9 +511,9 @@ const AdminDashboard = () => {
                 ))}
                 {keys.length === 0 && (
                   <tr>
-                    <td colSpan={5} className="px-5 py-10 text-center text-slate-500 flex flex-col items-center">
-                      <KeyRound className="h-10 w-10 text-slate-700 mb-3"/>
-                      <span>Không tìm thấy License Key nào.</span>
+                    <td colSpan={5} className="px-6 py-12 text-center text-slate-500 flex flex-col items-center">
+                      <KeyRound className="h-10 w-10 text-slate-700 mb-3 animate-pulse"/>
+                      <span className="font-semibold text-sm">Không tìm thấy License Key nào.</span>
                     </td>
                   </tr>
                 )}
@@ -480,79 +523,24 @@ const AdminDashboard = () => {
         </div>
       )}
 
-      {subTab === "staff" && (
-        <div className="max-w-xl space-y-6 rounded-2xl border border-white/5 bg-slate-900/40 p-8 animate-in fade-in slide-in-from-bottom-4 duration-500 shadow-2xl">
-          <div className="flex items-center gap-4">
-             <div className="p-3 rounded-xl bg-indigo-500/10 text-indigo-400"><UserCog className="h-6 w-6"/></div>
-             <div>
-                <h3 className="text-lg font-bold text-white">Quản lý Tài khoản Nội bộ</h3>
-                <p className="text-sm text-slate-400">Tạo tài khoản phân quyền STAFF để nhân sự hỗ trợ hệ thống.</p>
-             </div>
-          </div>
-          
-          <form onSubmit={createStaff} className="space-y-4 pt-4 border-t border-white/5">
-            <div>
-               <label className="block text-xs font-semibold text-slate-400 mb-2">Họ & Tên</label>
-               <input
-                 type="text"
-                 required
-                 placeholder="Nguyễn Văn A"
-                 value={staffFullName}
-                 onChange={(event) => setStaffFullName(event.target.value)}
-                 className="w-full rounded-xl border border-slate-700 bg-slate-950 px-4 py-3 text-sm text-white outline-none focus:border-indigo-500 focus:bg-slate-900 transition-colors"
-               />
-            </div>
-            <div>
-               <label className="block text-xs font-semibold text-slate-400 mb-2">Địa chỉ Email</label>
-               <input
-                 type="email"
-                 required
-                 placeholder="staff@novachat.ai"
-                 value={staffEmail}
-                 onChange={(event) => setStaffEmail(event.target.value)}
-                 className="w-full rounded-xl border border-slate-700 bg-slate-950 px-4 py-3 text-sm text-white outline-none focus:border-indigo-500 focus:bg-slate-900 transition-colors"
-               />
-            </div>
-            <div>
-               <label className="block text-xs font-semibold text-slate-400 mb-2">Mật khẩu truy cập</label>
-               <input
-                 type="password"
-                 required
-                 placeholder="Tối thiểu 8 ký tự"
-                 value={staffPassword}
-                 onChange={(event) => setStaffPassword(event.target.value)}
-                 className="w-full rounded-xl border border-slate-700 bg-slate-950 px-4 py-3 text-sm text-white outline-none focus:border-indigo-500 focus:bg-slate-900 transition-colors"
-               />
-            </div>
-            <div className="pt-2">
-              <button
-                disabled={creatingStaff}
-                className="inline-flex w-full cursor-pointer items-center justify-center gap-2 rounded-xl bg-indigo-600 px-4 py-3.5 text-sm font-bold text-white shadow-lg shadow-indigo-600/20 hover:bg-indigo-500 disabled:opacity-50 transition-all active:scale-[0.98]"
-              >
-                {creatingStaff ? "Đang khởi tạo..." : "Khởi tạo Tài khoản"}
-              </button>
-            </div>
-          </form>
-        </div>
-      )}
-
       {/* Assign Modal */}
       {assigningKeyId !== null && (
-        <div className="fixed inset-0 z-50 flex items-center justify-center bg-slate-950/70 backdrop-blur-sm px-4">
-          <div className="w-full max-w-md bg-slate-900 border border-indigo-500/20 rounded-2xl p-6 shadow-2xl relative overflow-hidden animate-in zoom-in-95 duration-200">
+        <div className="fixed inset-0 z-50 flex items-center justify-center bg-slate-950/80 backdrop-blur-md px-4">
+          <div className="w-full max-w-md bg-slate-900 border border-slate-800 rounded-2xl p-6 shadow-2xl relative overflow-hidden animate-in zoom-in-95 duration-200">
+            <div className="absolute -right-10 -top-10 w-32 h-32 bg-indigo-500/10 rounded-full blur-3xl pointer-events-none"></div>
             <h3 className="text-xl font-bold text-white mb-2">Cấp phát License Key</h3>
             <p className="text-slate-400 text-sm mb-6 leading-relaxed">
-              Nhập ID của người dùng (Customer ID) để cấp phát key này cho họ. Họ sẽ có thể thấy và sử dụng nó.
+              Nhập ID của người dùng (Customer ID) để cấp phát key này cho họ trước khi họ thực hiện kích hoạt.
             </p>
             <form onSubmit={assignKey} className="space-y-5">
               <div>
-                <label className="block text-sm font-semibold text-slate-300 mb-2">Customer ID</label>
+                <label className="block text-xs font-semibold text-slate-400 uppercase tracking-wider mb-2">Customer ID</label>
                 <input
                   type="number"
                   placeholder="Ví dụ: 2"
                   value={assignTargetUserId}
                   onChange={(e) => setAssignTargetUserId(e.target.value)}
-                  className="w-full rounded-xl border border-slate-700 bg-slate-950 px-4 py-3.5 text-white focus:border-indigo-500 outline-none"
+                  className="w-full rounded-xl border border-slate-800 bg-slate-950 px-4 py-3.5 text-white focus:border-indigo-500/50 focus:ring-2 focus:ring-indigo-500/10 outline-none transition-all placeholder:text-slate-700"
                   required
                   autoFocus
                 />
@@ -561,13 +549,13 @@ const AdminDashboard = () => {
                 <button
                   type="button"
                   onClick={() => { setAssigningKeyId(null); setAssignTargetUserId(""); }}
-                  className="flex-1 rounded-xl bg-slate-800 hover:bg-slate-700 py-3.5 font-semibold text-sm text-slate-300"
+                  className="flex-1 rounded-xl bg-slate-800 hover:bg-slate-700 border border-slate-750 py-3.5 font-bold text-sm text-slate-300 transition-colors"
                 >
                   Hủy
                 </button>
                 <button
                   type="submit"
-                  className="flex-1 rounded-xl bg-indigo-600 hover:bg-indigo-500 py-3.5 font-semibold text-sm text-white shadow-lg shadow-indigo-600/20"
+                  className="flex-1 rounded-xl bg-indigo-600 hover:bg-indigo-500 py-3.5 font-bold text-sm text-white shadow-lg shadow-indigo-600/20 transition-all active:scale-[0.98]"
                 >
                   Xác nhận
                 </button>
