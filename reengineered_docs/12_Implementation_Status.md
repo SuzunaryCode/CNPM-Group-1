@@ -60,6 +60,13 @@ NovaChat AI đã hoàn thành luồng MVP từ tạo workspace, nạp tri thức
 
 - `User.plan` (`FREE`/`PRO`) và `Workspace.message_count`/`message_count_period` cho hạn mức
   50 tin nhắn/tháng ở gói FREE; `/widget-config` trả `watermark: true` cho workspace FREE.
+- **Giới hạn tính năng FREE qua Glassmorphic Lock:** Người dùng FREE bị khóa các khu vực: Thống kê & Báo cáo (Analytics), Khóa Domain (Allowed Domains), và Tùy chỉnh Giao diện Widget (màu sắc, tên bot, lời chào AI, avatar). Khi truy cập sẽ bị bao phủ bởi lớp kính mờ hiển thị nút đề xuất nâng cấp PRO.
+- **Quảng cáo giả tài trợ (FREE):** Chèn các banner quảng cáo mô phỏng (Canva Pro ở sidebar và Hosting ở trang chính) cho người dùng gói FREE; các banner này biến mất 100% sau khi lên PRO.
+- **Trang nâng cấp PRO độc lập:** Tách phần nâng cấp lên PRO thành một Landing Page riêng cho người dùng FREE, cung cấp phương thức kích hoạt bằng mã License Key hoặc quét mã QR Zalo/Hotline liên hệ chủ doanh nghiệp. Kích hoạt xong sẽ kích hoạt callback cập nhật trạng thái lập tức (Auto Refresh ngầm qua React state) không cần tải lại trang.
+- **Phân tách giao diện theo Gói & Phân quyền:**
+  - **System Manager (Bên A):** Độc quyền sử dụng giao diện **Premium Dark Mode (Tối)**.
+  - **Doanh nghiệp PRO (Bên B - PRO):** Nâng cấp lên giao diện **Premium Light Mode (Sáng cao cấp)** với hiệu ứng Mesh Gradient mịn màng và Glassmorphic Sidebar màu chàm nhạt tinh tế.
+  - **Doanh nghiệp FREE (Bên B - FREE):** Giao diện sáng cơ bản phẳng.
 - `LicenseKey`: sinh bằng `secrets` (CSPRNG, định dạng `NOVA-XXXX-XXXX-XXXX-XXXX`), xác thực
   chỉ đối chiếu DB (không suy luận từ format chuỗi), endpoint kích hoạt rate-limit 5 lần/phút/user
   (sliding window) chống brute-force.

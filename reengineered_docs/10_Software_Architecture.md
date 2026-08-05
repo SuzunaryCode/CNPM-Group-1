@@ -65,6 +65,7 @@ frontend/src/
 ├── pages/Omnibox.tsx
 ├── pages/Analytics.tsx
 ├── pages/SystemSettings.tsx
+├── pages/UpgradeLanding.tsx    # Pricing landing page & active License Key form
 └── services/api.ts
 
 widget/src/
@@ -78,7 +79,10 @@ widget/src/
 ### SQL entities
 
 - **User:** email, password hash, **global role** `USER`/`STAFF`/`ADMIN` (quyết định quyền vào
-  Admin Dashboard, độc lập với role theo workspace), **plan** `FREE`/`PRO`, active flag.
+  Admin Dashboard, độc lập với role theo workspace), **plan** `FREE`/`PRO`, active flag. Gói plan của người dùng quyết định cấu trúc giao diện hiển thị:
+  - **Gói FREE (Doanh nghiệp FREE):** Giao diện sáng phẳng tiêu chuẩn, chèn các quảng cáo giả tài trợ (Canva Pro ở sidebar và Hosting ở trang chính), và khóa mờ (glassmorphism overlay) các tính năng cao cấp (Thống kê & Báo cáo, Khóa Domain, Tùy chỉnh giao diện Widget).
+  - **Gói PRO (Doanh nghiệp PRO):** Giao diện sáng cao cấp tinh tế (**Premium Light Mode**) sử dụng hiệu ứng Mesh Gradient nền và Glassmorphic Sidebar chàm nhạt, tắt hoàn toàn quảng cáo và mở khóa mọi tính năng.
+  - **System Manager (Admin Bên A):** Độc quyền sử dụng giao diện **Premium Dark Mode (Tối)** tối giản.
 - **Workspace:** owner, system prompt, widget token, `allowed_domains` (JSON, nhiều domain khóa
   nhúng), widget settings, `message_count`/`message_count_period` (hạn mức FREE).
 - **WorkspaceMember:** user + workspace + role `admin`/`agent`, unique theo cặp — đổi được sau
