@@ -102,7 +102,7 @@ const Login = () => {
     <div className="novachat-dark flex min-h-screen overflow-hidden bg-slate-950 font-sans text-slate-100 relative">
       {/* Background Glow Orbs */}
       <div className="absolute top-1/4 left-1/4 -translate-x-1/2 -translate-y-1/2 w-[35rem] h-[35rem] bg-indigo-600/10 rounded-full blur-[120px] pointer-events-none"></div>
-      <div className="absolute bottom-1/4 right-1/4 translate-x-1/2 translate-y-1/2 w-[40rem] h-[40rem] bg-purple-650/10 rounded-full blur-[130px] pointer-events-none"></div>
+      <div className="absolute bottom-1/4 right-1/4 translate-x-1/2 translate-y-1/2 w-[40rem] h-[40rem] bg-purple-655/10 rounded-full blur-[130px] pointer-events-none"></div>
       <div className="absolute top-1/2 right-10 -translate-y-1/2 w-[30rem] h-[30rem] bg-pink-500/5 rounded-full blur-[100px] pointer-events-none"></div>
 
       <div className="relative z-10 grid min-h-screen w-full lg:grid-cols-12">
@@ -116,40 +116,93 @@ const Login = () => {
             </span>
           </div>
 
-          {/* Center Showcase */}
-          <div className="max-w-md my-auto space-y-8 relative z-10">
-            <div className="inline-flex items-center space-x-2 rounded-full border border-indigo-500/20 bg-indigo-500/10 px-3.5 py-1 text-xs font-bold text-indigo-400">
-              <Sparkles className="h-3.5 w-3.5" />
-              <span>Nền tảng quản lý Bot AI</span>
+          {/* Center Showcase - Grid layout to fill space */}
+          <div className="my-auto grid grid-cols-1 xl:grid-cols-12 gap-8 items-center relative z-10 w-full">
+            {/* Left panel: Info */}
+            <div className="xl:col-span-7 space-y-8">
+              <div className="inline-flex items-center space-x-2 rounded-full border border-indigo-500/20 bg-indigo-500/10 px-3.5 py-1 text-xs font-bold text-indigo-400">
+                <Sparkles className="h-3.5 w-3.5" />
+                <span>Nền tảng quản lý Bot AI</span>
+              </div>
+
+              <div className="space-y-4">
+                <h1 className="text-4xl font-black leading-tight text-white tracking-tight">
+                  Tạo dựng và quản trị{" "}
+                  <span className="bg-gradient-to-r from-indigo-400 via-purple-400 to-pink-400 bg-clip-text text-transparent font-black">
+                    Chatbot thông minh
+                  </span>{" "}
+                  chỉ trong vài phút.
+                </h1>
+                <p className="text-sm leading-relaxed text-slate-400">
+                  Nền tảng giúp bạn quản lý nhiều không gian làm việc khác nhau, huấn luyện dữ liệu tùy chỉnh và tích hợp trực tiếp các trợ lý ảo AI tốt nhất vào doanh nghiệp của bạn.
+                </p>
+              </div>
+
+              {/* Feature List */}
+              <ul className="space-y-4">
+                {[
+                  "Quản lý nhiều Không gian làm việc riêng biệt",
+                  "Kết nối và đồng bộ dữ liệu nhanh chóng",
+                  "Giao diện quản lý trực quan và dễ sử dụng",
+                  "Phân quyền quản trị thông tin bảo mật tuyệt đối",
+                ].map((text, idx) => (
+                  <li key={idx} className="flex items-start space-x-3">
+                    <CheckCircle2 className="mt-0.5 h-5 w-5 shrink-0 text-emerald-450 drop-shadow-[0_0_8px_rgba(52,211,153,0.3)]" />
+                    <span className="text-sm font-semibold text-slate-300">{text}</span>
+                  </li>
+                ))}
+              </ul>
             </div>
 
-            <div className="space-y-4">
-              <h1 className="text-4xl font-black leading-tight text-white tracking-tight">
-                Tạo dựng và quản trị{" "}
-                <span className="bg-gradient-to-r from-indigo-400 via-purple-400 to-pink-400 bg-clip-text text-transparent font-black">
-                  Chatbot thông minh
-                </span>{" "}
-                chỉ trong vài phút.
-              </h1>
-              <p className="text-sm leading-relaxed text-slate-400">
-                Nền tảng giúp bạn quản lý nhiều không gian làm việc khác nhau, huấn luyện dữ liệu tùy chỉnh và tích hợp trực tiếp các trợ lý ảo AI tốt nhất vào doanh nghiệp của bạn.
-              </p>
-            </div>
+            {/* Right panel: Mock Chat Widget */}
+            <div className="xl:col-span-5 hidden xl:block w-full">
+              <div className="rounded-3xl border border-slate-800 bg-slate-900/50 p-5 shadow-2xl backdrop-blur-xl space-y-4 max-w-sm w-full mx-auto relative overflow-hidden">
+                <div className="absolute -right-6 -top-6 w-20 h-20 bg-indigo-500/10 rounded-full blur-2xl pointer-events-none"></div>
+                
+                {/* Mock Header */}
+                <div className="flex items-center gap-2.5 border-b border-slate-850 pb-3">
+                  <div className="w-8 h-8 rounded-full bg-indigo-600/30 flex items-center justify-center font-bold text-white text-xs border border-indigo-500/20">
+                    <Sparkles className="h-4 w-4 text-indigo-400" />
+                  </div>
+                  <div>
+                    <div className="text-[11px] font-bold text-white">NovaChat Trợ lý</div>
+                    <div className="flex items-center gap-1.5 mt-0.5">
+                      <div className="w-1.5 h-1.5 bg-green-400 rounded-full animate-pulse"></div>
+                      <span className="text-[9px] text-indigo-400 font-semibold">Trực tuyến</span>
+                    </div>
+                  </div>
+                </div>
 
-            {/* Feature List */}
-            <ul className="space-y-4">
-              {[
-                "Quản lý nhiều Không gian làm việc riêng biệt",
-                "Kết nối và đồng bộ dữ liệu nhanh chóng",
-                "Giao diện quản lý trực quan và dễ sử dụng",
-                "Phân quyền quản trị thông tin bảo mật tuyệt đối",
-              ].map((text, idx) => (
-                <li key={idx} className="flex items-start space-x-3">
-                  <CheckCircle2 className="mt-0.5 h-5 w-5 shrink-0 text-emerald-450 drop-shadow-[0_0_8px_rgba(52,211,153,0.3)]" />
-                  <span className="text-sm font-semibold text-slate-300">{text}</span>
-                </li>
-              ))}
-            </ul>
+                {/* Mock Chat History */}
+                <div className="space-y-3 text-[10px] max-h-[220px] overflow-y-auto pr-1">
+                  <div className="flex justify-start">
+                    <div className="bg-slate-950/80 text-slate-300 p-2.5 rounded-2xl rounded-bl-none border border-slate-800/80 max-w-[85%] leading-relaxed">
+                      Xin chào! Mình là NovaChat AI. Mình có thể giúp gì cho bạn hôm nay?
+                    </div>
+                  </div>
+                  <div className="flex justify-end">
+                    <div className="bg-indigo-600 text-white p-2.5 rounded-2xl rounded-br-none max-w-[85%] leading-relaxed shadow-sm">
+                      Làm sao để tích hợp NovaChat vào web của tôi?
+                    </div>
+                  </div>
+                  <div className="flex justify-start">
+                    <div className="bg-slate-950/80 text-slate-300 p-2.5 rounded-2xl rounded-bl-none border border-slate-800/80 max-w-[85%] leading-relaxed">
+                      Bạn chỉ cần sao chép mã nhúng trong phần cấu hình và dán vào mã nguồn trang web là xong nhé!
+                    </div>
+                  </div>
+                </div>
+
+                {/* Mock Input */}
+                <div className="flex gap-2 items-center pt-3 border-t border-slate-850">
+                  <div className="flex-1 rounded-xl bg-slate-950/80 py-2 px-3 text-slate-600 text-[10px] border border-slate-900">
+                    Nhập câu hỏi...
+                  </div>
+                  <div className="w-7 h-7 rounded-full bg-indigo-600 flex items-center justify-center text-white text-[10px] shadow-md shadow-indigo-600/20">
+                    ➔
+                  </div>
+                </div>
+              </div>
+            </div>
           </div>
 
           {/* Footer Info */}
@@ -203,7 +256,7 @@ const Login = () => {
                       </span>
                       <input
                         type="text"
-                        className="w-full bg-transparent py-3.5 pl-11 pr-4 text-sm text-white outline-none placeholder:text-slate-700"
+                        className="w-full bg-transparent py-3.5 pl-10 pr-4 text-sm text-white outline-none placeholder:text-slate-700"
                         placeholder="Nguyễn Văn A"
                         value={fullName}
                         onChange={(e) => setFullName(e.target.value)}
@@ -223,7 +276,7 @@ const Login = () => {
                     </span>
                     <input
                       type="email"
-                      className="w-full bg-transparent py-3.5 pl-11 pr-4 text-sm text-white outline-none placeholder:text-slate-700"
+                      className="w-full bg-transparent py-3.5 pl-10 pr-4 text-sm text-white outline-none placeholder:text-slate-700"
                       placeholder="admin@novachat.com"
                       value={email}
                       onChange={(e) => setEmail(e.target.value)}
@@ -242,7 +295,7 @@ const Login = () => {
                     </span>
                     <input
                       type={showPassword ? "text" : "password"}
-                      className="w-full bg-transparent py-3.5 pl-11 pr-12 text-sm text-white outline-none placeholder:text-slate-700"
+                      className="w-full bg-transparent py-3.5 pl-10 pr-12 text-sm text-white outline-none placeholder:text-slate-700"
                       placeholder="••••••••"
                       value={password}
                       onChange={(e) => setPassword(e.target.value)}
@@ -261,7 +314,7 @@ const Login = () => {
                 <button
                   type="submit"
                   disabled={loading}
-                  className="group relative mt-2 w-full cursor-pointer overflow-hidden rounded-xl bg-gradient-to-r from-indigo-500 via-purple-500 to-pink-500 hover:from-indigo-600 hover:via-purple-600 hover:to-pink-650 font-bold text-white shadow-lg shadow-indigo-500/20 transition-all duration-300 transform active:scale-[0.98] disabled:pointer-events-none disabled:opacity-50"
+                  className="group relative mt-2 w-full cursor-pointer overflow-hidden rounded-xl bg-gradient-to-r from-indigo-500 via-purple-500 to-pink-500 hover:from-indigo-600 hover:via-purple-600 hover:to-pink-655 font-bold text-white shadow-lg shadow-indigo-500/20 transition-all duration-300 transform active:scale-[0.98] disabled:pointer-events-none disabled:opacity-50"
                 >
                   <div className="flex w-full items-center justify-center space-x-2 px-4 py-3.5 text-sm">
                     <span>{loading ? "Đang xử lý..." : isRegister ? "Đăng ký" : "Đăng nhập"}</span>
