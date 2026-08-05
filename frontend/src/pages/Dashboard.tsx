@@ -252,8 +252,13 @@ const Dashboard = () => {
 
 
   return (
-    <div className={`flex min-h-screen overflow-hidden font-sans ${isPremiumTheme ? "novachat-dark bg-slate-950 text-slate-100" : "novachat-light bg-[#f6f7f9] text-slate-900"}`}>
+    <div className={`flex min-h-screen overflow-hidden font-sans relative ${isAdmin ? "novachat-dark bg-slate-950 text-slate-100" : "novachat-light bg-[#f6f7f9] text-slate-900"}`}>
       <Toaster position="top-right" />
+
+      {/* Premium radial gradient accent for PRO users (Bên B) in light mode */}
+      {!isAdmin && currentUserPlan === "PRO" && (
+        <div className="absolute inset-0 bg-[radial-gradient(circle_at_top_right,rgba(99,102,241,0.04),transparent_50%)] pointer-events-none z-0" />
+      )}
 
       {sidebarOpen && (
         <button
@@ -264,21 +269,34 @@ const Dashboard = () => {
       )}
 
       {/* 1. Sidebar bên trái (Đóng vai trò điều hướng cao cấp) */}
-      <aside className={`fixed inset-y-0 left-0 z-40 flex w-64 shrink-0 flex-col justify-between border-r p-4 transition-transform lg:static lg:translate-x-0 ${sidebarOpen ? "translate-x-0" : "-translate-x-full"} ${isPremiumTheme ? "border-slate-800 bg-slate-900 shadow-none text-slate-100" : "border-slate-200 bg-white shadow-xl lg:shadow-none"}`}>
+      <aside className={`fixed inset-y-0 left-0 z-40 flex w-64 shrink-0 flex-col justify-between border-r p-4 transition-transform lg:static lg:translate-x-0 ${sidebarOpen ? "translate-x-0" : "-translate-x-full"} ${
+        isAdmin 
+          ? "border-slate-800 bg-slate-900 shadow-none text-slate-100" 
+          : currentUserPlan === "PRO"
+            ? "border-indigo-100/80 bg-white/90 backdrop-blur-md shadow-sm"
+            : "border-slate-200 bg-white shadow-xl lg:shadow-none"
+      }`}>
         <div>
           {/* Logo brand */}
           <div className="mb-8 flex items-center justify-between px-2 pt-1">
             <div className="flex items-center gap-3">
             <img src="/favicon.png" alt="NovaChat Logo" className="h-10 w-10 object-contain shadow-lg shadow-indigo-500/20" />
             <div>
-              <h2 className={`text-base font-bold ${isPremiumTheme ? "text-white bg-gradient-to-r from-white via-slate-200 to-slate-400 bg-clip-text text-transparent font-black tracking-wide" : "text-slate-900"}`}>NovaChat AI</h2>
-              <span className={`text-[10px] font-extrabold uppercase px-2 py-0.5 rounded-full ${isPremiumTheme ? "text-indigo-400 bg-indigo-500/10 border border-indigo-500/20" : "text-indigo-600"}`}>
+              <h2 className={`text-base font-bold ${isAdmin ? "text-white bg-gradient-to-r from-white via-slate-200 to-slate-400 bg-clip-text text-transparent font-black tracking-wide" : "text-slate-900"}`}>NovaChat AI</h2>
+              <span className={`text-[10px] font-extrabold uppercase px-2 py-0.5 rounded-full ${
+                isAdmin 
+                  ? "text-indigo-400 bg-indigo-500/10 border border-indigo-500/20" 
+                  : currentUserPlan === "PRO"
+                    ? "text-indigo-600 bg-indigo-50 border border-indigo-100"
+                    : "text-slate-500 bg-slate-100"
+              }`}>
                 {currentUserRole === "ADMIN" ? "System Manager" : "Workspace Hub"}
               </span>
             </div>
             </div>
-            <button onClick={() => setSidebarOpen(false)} aria-label="Đóng menu" className={`rounded-md p-2 lg:hidden ${isPremiumTheme ? "text-slate-400 hover:bg-slate-800" : "text-slate-500 hover:bg-slate-100"}`}><X className="h-4 w-4" /></button>
+            <button onClick={() => setSidebarOpen(false)} aria-label="Đóng menu" className={`rounded-md p-2 lg:hidden ${isAdmin ? "text-slate-400 hover:bg-slate-800" : "text-slate-500 hover:bg-slate-100"}`}><X className="h-4 w-4" /></button>
           </div>
+
           <nav className="space-y-1">
             {currentUserRole === "ADMIN" ? (
               <>
@@ -431,17 +449,23 @@ const Dashboard = () => {
                 <button className="text-[8px] bg-amber-200 px-1 py-0.5 rounded font-black hover:bg-amber-300 cursor-pointer animate-pulse" onClick={() => selectTab("upgrade")}>NÂNG CẤP PRO</button>
               </div>
               <p className="mt-1 leading-normal text-slate-700 font-medium">
-                <strong>Canva Pro chỉ 59k/tháng</strong> - Banner chatbot cực đẹp, thiết kế không giới hạn!
+                <strong>Canva Pro chỉ 59k/tháng</strong> - Thiết kế banner chatbot cực đẹp, thiết kế không giới hạn!
               </p>
             </div>
           )}
 
-          <div className={`flex items-center space-x-3 rounded-lg border p-3 ${isPremiumTheme ? "border-slate-800 bg-slate-950" : "border-slate-200 bg-slate-50"}`}>
+          <div className={`flex items-center space-x-3 rounded-lg border p-3 ${
+            isAdmin 
+              ? "border-slate-800 bg-slate-950" 
+              : currentUserPlan === "PRO"
+                ? "border-indigo-100 bg-indigo-50/30"
+                : "border-slate-200 bg-slate-50"
+          }`}>
             <div className="flex h-9 w-9 items-center justify-center rounded-full bg-indigo-600 font-bold uppercase text-white">
               {displayName.charAt(0)}
             </div>
             <div className="overflow-hidden">
-              <p className={`truncate text-xs font-semibold ${isPremiumTheme ? "text-slate-200" : "text-slate-800"}`}>{displayName}</p>
+              <p className={`truncate text-xs font-semibold ${isAdmin ? "text-slate-200" : "text-slate-800"}`}>{displayName}</p>
               <div className="flex items-center space-x-1.5 mt-0.5">
                 <Shield className="h-3 w-3 text-indigo-600" />
                 <span className="text-[10px] font-bold uppercase text-slate-500">
@@ -453,7 +477,7 @@ const Dashboard = () => {
 
           <button
             onClick={handleLogout}
-            className={`flex w-full cursor-pointer items-center justify-center space-x-2 rounded-lg px-4 py-2.5 text-sm font-semibold transition-colors ${isPremiumTheme ? "text-slate-400 hover:bg-red-500/10 hover:text-red-400" : "text-slate-600 hover:bg-red-55 hover:text-red-650"}`}
+            className={`flex w-full cursor-pointer items-center justify-center space-x-2 rounded-lg px-4 py-2.5 text-sm font-semibold transition-colors ${isAdmin ? "text-slate-400 hover:bg-red-500/10 hover:text-red-400" : "text-slate-600 hover:bg-red-50 hover:text-red-600"}`}
           >
             <LogOut className="h-4 w-4" />
             <span>Đăng xuất</span>
@@ -464,11 +488,17 @@ const Dashboard = () => {
       {/* 2. Main Content Area */}
       <main className="flex min-h-screen min-w-0 flex-1 flex-col overflow-y-auto">
         {/* Header bar */}
-        <div className={`sticky top-0 z-20 flex items-center justify-between border-b px-4 py-3 backdrop-blur-sm sm:px-6 ${isPremiumTheme ? "border-slate-800 bg-slate-900/90" : "border-slate-200 bg-white/95"}`}>
+        <div className={`sticky top-0 z-20 flex items-center justify-between border-b px-4 py-3 backdrop-blur-sm sm:px-6 ${
+          isAdmin 
+            ? "border-slate-800 bg-slate-900/90" 
+            : currentUserPlan === "PRO"
+              ? "border-indigo-50 bg-white/80 backdrop-blur-md"
+              : "border-slate-200 bg-white/95"
+        }`}>
           <div className="flex items-center gap-3">
-            <button onClick={() => setSidebarOpen(true)} aria-label="Mở menu" className={`rounded-md border p-2 lg:hidden ${isPremiumTheme ? "border-slate-800 text-slate-400 hover:bg-slate-800" : "border-slate-200 text-slate-600 hover:bg-slate-50"}`}><Menu className="h-4 w-4" /></button>
-          <div className={`flex items-center space-x-2 text-xs font-medium ${isPremiumTheme ? "text-slate-400" : "text-slate-500"}`}>
-            <Calendar className={`h-4 w-4 ${isPremiumTheme ? "text-indigo-400" : "text-indigo-600"}`} />
+            <button onClick={() => setSidebarOpen(true)} aria-label="Mở menu" className={`rounded-md border p-2 lg:hidden ${isAdmin ? "border-slate-800 text-slate-400 hover:bg-slate-800" : "border-slate-200 text-slate-600 hover:bg-slate-50"}`}><Menu className="h-4 w-4" /></button>
+          <div className={`flex items-center space-x-2 text-xs font-medium ${isAdmin ? "text-slate-400" : "text-slate-500"}`}>
+            <Calendar className={`h-4 w-4 ${isAdmin ? "text-indigo-400" : "text-indigo-600"}`} />
             <span>{getFormattedDate()}</span>
           </div>
           </div>
