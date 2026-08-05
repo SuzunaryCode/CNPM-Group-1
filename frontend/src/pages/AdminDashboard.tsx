@@ -94,9 +94,12 @@ const AdminDashboard = () => {
   }, [userSearch]);
 
   useEffect(() => {
-    if (subTab === "dashboard") loadStats();
-    if (subTab === "license") loadKeys();
-    if (subTab === "customers" || subTab === "staff") loadUsers();
+    // eslint-disable-next-line react-hooks/set-state-in-effect
+    if (subTab === "dashboard") void loadStats();
+     
+    if (subTab === "license") void loadKeys();
+     
+    if (subTab === "customers" || subTab === "staff") void loadUsers();
   }, [subTab, loadStats, loadKeys, loadUsers]);
 
   // Handle generation
