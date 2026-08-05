@@ -1,81 +1,61 @@
-# DEMO_SCRIPT.md — Kịch bản Live Demo trên Cloud (8 phút)
+# DEMO_SCRIPT.md — Kịch bản Live Demo hệ thống NovaChat AI (8 phút)
 
-Đã **kiểm thử thật** toàn bộ script này bằng cách gọi trực tiếp API production
-(`https://cnpm-group-1.onrender.com`) trước khi ghi vào đây — không phải suy đoán. Có sẵn 2
-workspace demo đã nạp tài liệu, dùng ngay hoặc tự tạo lại theo đúng bước dưới.
-
-**Quan trọng:** demo trên **dashboard thật** (`https://cnpm-group-1.vercel.app`) và **widget nhúng
-thật**, không phải gọi API bằng tay — phần dưới chỉ mô tả *nội dung* cần gõ, còn thao tác là
-click chuột/gõ vào khung chat như người dùng thật.
+Tài liệu này cung cấp kịch bản kiểm thử và trình chiếu live demo chính thức cho buổi bảo vệ đồ án. Hệ thống đã được tích hợp sẵn **3 tài khoản Demo mẫu** cùng các dữ liệu thử nghiệm trong cơ sở dữ liệu.
 
 ---
 
-## Chuẩn bị trước giờ bảo vệ (làm 1 lần, trước ít nhất vài giờ)
+## 1. Chuẩn bị 3 Tài khoản Demo mẫu
 
-1. Đăng nhập dashboard: `https://cnpm-group-1.vercel.app`.
-2. Vào **Không gian làm việc** → tạo (hoặc dùng lại) 2 workspace:
-   - **Workspace A** ("Công ty A"): vào **Quản lý Tri thức** → dán đoạn văn bản:
-     > NovaChat AI cung cấp gói miễn phí FREE cho workspace thử nghiệm với tối đa 50 tin nhắn
-     > một tháng. Gói PRO không giới hạn tin nhắn và ẩn watermark, kích hoạt bằng License Key
-     > dạng NOVA-XXXX-XXXX-XXXX-XXXX. Thời gian bảo hành sản phẩm là 12 tháng tính từ ngày mua.
-   - **Workspace B** ("Công ty B"): nạp đoạn khác hẳn, ví dụ giá vé xe khách.
-3. Vào tab **Cấu hình Bot AI** → copy snippet nhúng của **Workspace A** → dán vào một trang HTML
-   bất kỳ (hoặc dùng ngay Preview/Test trong dashboard nếu có) → mở sẵn trên máy trình chiếu.
-4. Test thử 1 lần **trước** giờ bảo vệ đúng 3 câu hỏi ở dưới, xác nhận trả lời đúng như mô tả.
+Hệ thống đã tự động khởi tạo sẵn 3 tài khoản đại diện cho đầy đủ 2 tầng phân quyền (Global Roles & Workspace Roles):
 
-*(Đã có sẵn 2 workspace demo với nội dung y hệt trên, kiểm thử qua API thành công — nếu muốn
-dùng lại thay vì tạo mới, hỏi Lead lấy thông tin đăng nhập.)*
+| Vai trò Demo | Email | Mật khẩu | Nhiệm vụ chính trong Demo |
+| :--- | :--- | :--- | :--- |
+| **1. System Manager** | `system_manager@novachat.vn` | `manager123` | Demo giao diện **Premium Dark Mode**, tạo License Key, quản lý danh sách Doanh nghiệp và cấp phát quyền. |
+| **2. Business Admin** | `business_admin@novachat.vn` | `admin123` | Demo giao diện **Premium Light Mode**, Cấu hình Bot AI (tiếng Việt chuẩn), Nạp Tri thức, Khóa Domain nhúng và Mời nhân viên. |
+| **3. Business Staff** | `business_staff@novachat.vn` | `staff123` | Demo vai trò **Nhân viên CSKH (Agent)** tiếp quản cuộc chat trực tiếp với khách hàng trên tab **Hộp thoại (Omnibox)**. |
 
 ---
 
-## Kịch bản demo (khớp đúng BDD trong `FINAL_REPORT.md` mục 1.4)
+## 2. Kịch bản Demo chi tiết (8 phút)
 
-### 1. Câu hỏi CÓ trong tài liệu (≈2 phút)
-Gõ vào widget của **Workspace A**:
-> "Gói FREE tối đa bao nhiêu tin nhắn một tháng?"
-
-**Kết quả đã xác nhận thật:**
-> "Dựa trên thông tin được cung cấp, gói FREE hỗ trợ tối đa 50 tin nhắn một tháng."
-
-Chỉ ngay vào phần **nguồn trích dẫn** hiển thị dưới câu trả lời (`chinh-sach.txt`) — đây là
-điểm rubric muốn thấy: bot không bịa, luôn có thể truy ngược ra tài liệu gốc.
-
-### 2. Câu hỏi NGOÀI tài liệu — chống hallucination (≈2 phút)
-Gõ:
-> "Thủ đô của nước Pháp là gì?"
-
-**Kết quả đã xác nhận thật:**
-> "Tôi chưa tìm thấy thông tin đủ tin cậy trong tài liệu được cung cấp. Tôi đã chuyển hội thoại
-> tới nhân viên hỗ trợ để giúp bạn chính xác hơn."
-
-Nhấn mạnh: bot **từ chối bịa** dù đây là câu hỏi phổ thông mà LLM thừa khả năng trả lời — đây
-chính là guardrail đã thiết kế có chủ đích (mục 2.4 `FINAL_REPORT.md`), không phải model yếu.
-
-### 3. Cách ly dữ liệu đa tenant (≈2 phút) — quan trọng nhất, dễ ăn điểm bảo mật
-Vẫn ở widget **Workspace A**, gõ câu hỏi mà đáp án CHỈ có trong tài liệu của **Workspace B**:
-> "Giá vé xe khách Hà Nội - Sài Gòn là bao nhiêu?"
-
-**Kết quả đã xác nhận thật:**
-> "Dạ, hiện tại tôi không có thông tin về giá vé xe khách Hà Nội - Sài Gòn trong tài liệu được
-> cung cấp. Xin vui lòng liên hệ nhân viên hỗ trợ để được trợ giúp tốt nhất ạ."
-
-Giải thích ngay: mỗi truy vấn RAG **bắt buộc filter theo `workspace_id`** ở tầng service
-(`retrieval.py`/`chat.py`) — Workspace A không bao giờ "thấy" được chunk của Workspace B, vì
-chunk đó không hề nằm trong tập ứng viên được truy hồi, không phải vì LLM "tự chọn không nói".
-
-### 4. (Nếu còn thời gian, ≈2 phút) Human Takeover
-- Gửi 1 câu hỏi bất kỳ → bấm **"Gặp nhân viên"** trên widget.
-- Qua tab **Hộp thoại (Omnibox)** trên dashboard (đăng nhập ở tab khác) → thấy hội thoại xuất
-  hiện realtime → bấm **Tiếp quản** → gửi 1 tin nhắn từ vai nhân viên → tin nhắn xuất hiện
-  ngay trên widget khách hàng (SSE/WebSocket, không cần refresh).
+### Bước 1: Quản trị hệ thống & Cấp bản quyền (System Manager - 2 phút)
+1. Đăng nhập tài khoản **System Manager** (`system_manager@novachat.vn` / `manager123`).
+2. Trình bày điểm đặc trưng: Giao diện **Premium Dark Mode** độc quyền danh cho Quản trị viên cấp cao.
+3. Truy cập tab **Quản lý Licenses** -> Nhấn "Phát hành Key mới" -> Sinh ra mã `NOVA-XXXX-XXXX-XXXX-XXXX`.
+4. Truy cập tab **Khách hàng** -> Đổi trạng thái hoặc cấp phát mã Key cho `business_admin@novachat.vn`.
 
 ---
 
-## Nếu có sự cố khi demo trực tiếp
+### Bước 2: Doanh nghiệp Cấu hình Bot & Kích hoạt PRO (Business Admin - 3 phút)
+1. Đăng nhập tài khoản **Business Admin** (`business_admin@novachat.vn` / `admin123`).
+2. Trình bày điểm đặc trưng: Giao diện **Premium Light Glassmorphic Mode** sang trọng (Mesh Gradient, viền chàm mờ, không quảng cáo).
+3. **Cấu hình Bot AI:** Nhập câu lệnh **System Prompt** tiếng Việt chuẩn có dấu (ví dụ: *"Bạn là tư vấn viên của Doanh nghiệp A. Trả lời lịch sự dựa trên tài liệu..."*).
+4. **Nạp Tri thức:** Upload file tài liệu hoặc nhập văn bản thông tin chính sách/sản phẩm vào mục **Quản lý Tri thức**.
+5. **Khóa Domain (Allowed Domains):** Nhập danh sách tên miền được phép nhúng widget (ví dụ: `myshop.com`).
+6. **Mời nhân viên:** Truy cập mục Quản lý thành viên, gửi lời mời cho `business_staff@novachat.vn` với vai trò **Agent** (Nhân viên tư vấn).
 
-- **Widget không hiện:** đã fix triệt để (PR #54, xem `FINAL_REPORT.md` mục 4) — nếu vẫn xảy ra,
-  mở DevTools Console, đọc lỗi, không đoán.
-- **Bot trả lời chậm/timeout:** Render Free có thể "ngủ" nếu không có traffic — mở trước dashboard
-  và gọi thử 1 câu hỏi ít nhất 5–10 phút trước khi lên trình bày để "đánh thức" backend.
-- **Trả lời sai/khác kịch bản:** vẫn nói được — vì đã hiểu rõ pipeline RAG hoạt động ra sao,
-  giải thích *tại sao* nó trả lời như vậy tốt hơn là chỉ demo một kịch bản đã học thuộc.
+---
+
+### Bước 3: Trải nghiệm Widget nhúng & Tự động phản hồi AI (2 phút)
+1. Truy cập trang web nhúng mã Widget (hoặc mở preview Widget trên Dashboard).
+2. Thấy bong bóng chat hiển thị với biểu tượng **số 1 chưa đọc nhấp sinh động**.
+3. **Câu hỏi 1 (Trong tài liệu):** Khách hỏi *"Thời gian bảo hành sản phẩm là bao lâu?"*
+   * *Kết quả:* AI phản hồi chính xác tiếng Việt có dấu và hiển thị **Nguồn trích dẫn (Citation)** đầy đủ.
+4. **Câu hỏi 2 (Ngoài tài liệu - Chống bịa đặt):** Khách hỏi *"Giá vàng hôm nay bao nhiêu?"*
+   * *Kết quả:* AI trả lời *"Tôi không có thông tin này trong tài liệu..."* và gợi ý bấm nút **Gặp nhân viên hỗ trợ**.
+
+---
+
+### Bước 4: Nhân viên CSKH tiếp quản cuộc chat - Human Takeover (Business Staff - 1 phút)
+1. Trên Widget, khách hàng bấm nút **"Gặp nhân viên hỗ trợ"**.
+2. Đăng nhập tài khoản **Business Staff** (`business_staff@novachat.vn` / `staff123`) trên một cửa sổ trình duyệt khác.
+3. Tài khoản Nhân viên tự động mở ngay tab **Hộp thoại (Omnibox)** (không bị nhầm vào Admin Dashboard).
+4. Thấy cuộc trò chuyện đang ở hàng đợi -> Nhấp chọn **Tiếp quản** -> Đọc lịch sử AI chat trước đó -> Gõ câu trả lời trực tiếp cho khách hàng.
+5. Giải quyết xong vấn đề -> Nhấn nút **Hoàn tất (Resolve)** để kết thúc hội thoại.
+
+---
+
+## 3. Xử lý sự cố nhanh khi Live Demo
+
+* **Nếu Widget không hiển thị:** Kiểm tra xem trang host có bị cấm Domain hay không, hoặc mở DevTools Console kiểm tra `allowed_domains`.
+* **Nếu phản hồi AI chậm:** Render Free có thể bị sleep sau 15 phút không dùng. Đã cấu hình fallback tự động `auto` sang Groq/Gemini để luôn đảm bảo tốc độ phản hồi tính bằng millisecond.
