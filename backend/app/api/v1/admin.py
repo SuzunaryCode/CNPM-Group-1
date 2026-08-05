@@ -1,4 +1,4 @@
-from datetime import datetime
+from datetime import datetime, timezone
 from fastapi import APIRouter, Depends, HTTPException, status
 from sqlalchemy.orm import Session
 from sqlalchemy import or_, func
@@ -22,6 +22,15 @@ def _check_expired(db: Session, license_key: LicenseKey) -> LicenseKey:
     return license_key
 
 
+def _as_utc(value: datetime | None) -> datetime | None:
+    """DB tra ve datetime naive (thuc chat la UTC vi luon ghi bang datetime.utcnow()).
+    Gan tzinfo=UTC truoc khi tra ve JSON, neu khong FE (new Date(...)) se hieu chuoi
+    gio thieu timezone la gio dia phuong -> lech 7h voi nguoi dung VN."""
+    if value is None or value.tzinfo is not None:
+        return value
+    return value.replace(tzinfo=timezone.utc)
+
+
 def _to_license_response(license_key: LicenseKey) -> LicenseKeyResponse:
     return LicenseKeyResponse(
         id=license_key.id,
@@ -31,9 +40,9 @@ def _to_license_response(license_key: LicenseKey) -> LicenseKeyResponse:
         assigned_to_email=license_key.assigned_to.email if license_key.assigned_to else None,
         used_by_user_id=license_key.used_by_user_id,
         used_by_email=license_key.used_by.email if license_key.used_by else None,
-        used_at=license_key.used_at,
-        expires_at=license_key.expires_at,
-        created_at=license_key.created_at,
+        used_at=_as_utc(license_key.used_at),
+        expires_at=_as_utc(license_key.expires_at),
+        created_at=_as_utc(license_key.created_at),
     )
 
 
