@@ -53,11 +53,9 @@ if frontend_url:
 # danh cho Agent dang nhap dashboard, khong duoc reflect origin bat ky - truoc day dieu
 # kien nay dua vao "request co header X-Widget-Token khong" (client tu khai, khong xac
 # thuc gia tri), nen ke tan cong tu them header do la lam CORS nghi day la request cong
-# khai cho ca nhung endpoint chi-Agent. Chuyen sang whitelist theo dung path.
 _PUBLIC_CHAT_PATH = re.compile(
-    r"^/api/v1/chat/\d+(/widget-config|/stream|/request-human|/history|/poll)?$"
+    r"^/api/v1/chat/\d+(/widget-config|/stream|/request-human|/history|/poll|/welcome-message)?$"
 )
-
 
 class DynamicCORSMiddleware(BaseHTTPMiddleware):
     """

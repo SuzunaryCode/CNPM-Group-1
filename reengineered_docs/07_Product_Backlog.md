@@ -24,7 +24,7 @@ Ngày cập nhật: **19/07/2026**. Trạng thái dựa trên code đã merge v�
 | Ops | CI, health/metrics (ping DB thật + uptime), JSON log, rate limiting, Alembic baseline | Done nền tảng |
 | Ops | Ollama/Groq/Gemini provider và fallback tự động | Done; cloud cần API key |
 | Ops | Dashboard tab Tổng quan đọc `/health` thật (không còn số liệu hardcode) | Done |
-| Monetization | Freemium (hạn mức 50 tin/tháng, watermark) + License Key (CSPRNG, rate-limit) + Admin Dashboard (RBAC toàn cục `USER`/`STAFF`/`ADMIN`) | Done |
+| Monetization | Freemium (hạn mức 50 tin/tháng, watermark, khóa tính năng mờ, banner quảng cáo giả) + License Key (CSPRNG, rate-limit) + Landing Page nâng cấp PRO + Admin Dashboard (RBAC toàn cục USER/STAFF/ADMIN) + Phân quyền giao diện (PRO Light vs Admin Dark) | Done |
 | Quality | Golden dataset RAG 50 câu | Done bộ dữ liệu; chưa chạy tuning trên từng model |
 
 ## Đã pivot (quyết định kiến trúc thay đổi giữa dự án, không phải backlog còn mở)

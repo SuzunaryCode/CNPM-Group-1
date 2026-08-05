@@ -5,13 +5,10 @@ from sqlalchemy import Column, DateTime, ForeignKey, Integer, JSON, String, Text
 from sqlalchemy.orm import relationship
 
 from app.db.session import Base
-
 DEFAULT_SYSTEM_PROMPT = (
-    "Ban la tro ly ao cua cong ty. Chi tra loi dua tren context duoc cung cap. "
-    "Neu context khong co thong tin phu hop, hay de nghi khach hang gap nhan vien ho tro."
+    "Bạn là trợ lý ảo của công ty. Chỉ trả lời dựa trên ngữ cảnh được cung cấp. "
+    "Nếu ngữ cảnh không có thông tin phù hợp, hãy đề nghị khách hàng gặp nhân viên hỗ trợ."
 )
-
-
 def generate_widget_token() -> str:
     return uuid.uuid4().hex
 

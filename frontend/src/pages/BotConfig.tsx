@@ -1,6 +1,6 @@
 import React, { useState } from "react";
 import type { AxiosError } from "axios";
-import { Bot, Check, Copy, Globe, KeyRound, Palette, ShieldCheck, Sparkles } from "lucide-react";
+import { Bot, Check, Copy, Globe, KeyRound, Palette, ShieldCheck, Sparkles, Lock } from "lucide-react";
 import { toast } from "react-hot-toast";
 import api from "../services/api";
 
@@ -34,7 +34,14 @@ const getApiErrorDetail = (error: unknown) => {
   return axiosError.response?.data?.detail;
 };
 
-const BotConfig: React.FC<BotConfigProps> = ({ workspaces, onWorkspacesChanged }) => {
+interface BotConfigProps {
+  workspaces: Workspace[];
+  onWorkspacesChanged?: () => Promise<void> | void;
+  currentUserPlan?: string | null;
+  onTabChange?: (tab: string) => void;
+}
+
+const BotConfig: React.FC<BotConfigProps> = ({ workspaces, onWorkspacesChanged, currentUserPlan, onTabChange }) => {
   const [selectedWorkspaceId, setSelectedWorkspaceId] = useState<number | "">(
     workspaces.length > 0 ? workspaces[0].id : ""
   );
@@ -58,6 +65,7 @@ const BotConfig: React.FC<BotConfigProps> = ({ workspaces, onWorkspacesChanged }
   const [avatarUrl, setAvatarUrl] = useState(selectedWorkspace?.bot_avatar_url || "");
   const [widgetPosition, setWidgetPosition] = useState<"left" | "right">(selectedWorkspace?.widget_position || "right");
   const [isSavingWidget, setIsSavingWidget] = useState(false);
+  const [integrationTab, setIntegrationTab] = useState<"html" | "nextjs" | "react">("html");
 
   const handleWorkspaceChange = (e: React.ChangeEvent<HTMLSelectElement>) => {
     const nextId = e.target.value === "" ? "" : Number(e.target.value);
@@ -232,7 +240,16 @@ const BotConfig: React.FC<BotConfigProps> = ({ workspaces, onWorkspacesChanged }
             </div>
 
             {/* Domain lock */}
-            <div className="rounded-2xl border border-white/5 bg-slate-900/40 p-6 backdrop-blur-md">
+            <div className="relative overflow-hidden rounded-2xl border border-white/5 bg-slate-900/40 p-6 backdrop-blur-md">
+              {currentUserPlan === "FREE" && (
+                <div className="absolute inset-0 bg-slate-950/75 backdrop-blur-sm z-20 flex flex-col items-center justify-center text-center p-4">
+                  <Lock className="h-6 w-6 text-amber-400 mb-1.5" />
+                  <h4 className="text-xs font-bold text-white uppercase tracking-wider">Khóa Domain (PRO)</h4>
+                  <p className="text-[10px] text-slate-400 mt-1 max-w-xs leading-normal">
+                    Nâng cấp lên gói PRO để khóa domain của widget, ngăn người khác copy mã nhúng.
+                  </p>
+                </div>
+              )}
               <h3 className="mb-4 flex items-center space-x-2 text-lg font-bold text-white">
                 <ShieldCheck className="h-5 w-5 text-indigo-400" />
                 <span>Khóa Domain (tùy chọn)</span>
@@ -262,7 +279,7 @@ const BotConfig: React.FC<BotConfigProps> = ({ workspaces, onWorkspacesChanged }
             </div>
 
             {/* Embed code */}
-            <div className="rounded-2xl border border-white/5 bg-slate-900/40 p-6 backdrop-blur-md">
+            <div className="rounded-2xl border border-white/5 bg-slate-900/40 p-6 backdrop-blur-md space-y-4">
               <div className="mb-4 flex items-center justify-between">
                 <h3 className="flex items-center space-x-2 text-lg font-bold text-white">
                   <Copy className="h-5 w-5 text-indigo-400" />
@@ -279,10 +296,131 @@ const BotConfig: React.FC<BotConfigProps> = ({ workspaces, onWorkspacesChanged }
               <pre className="overflow-x-auto rounded-xl border border-white/10 bg-slate-950 p-4 text-xs leading-relaxed text-emerald-300">
                 {embedSnippet}
               </pre>
-            </div>
+
+              {/* Hướng dẫn tích hợp chi tiết dạng Tabs */}
+              <div className="mt-4 pt-4 border-t border-white/5 space-y-4">
+                <div className="flex items-center justify-between">
+                  <h4 className="text-xs font-bold text-indigo-400 uppercase tracking-wider">
+                    Hướng dẫn tích hợp theo nền tảng:
+                  </h4>
+                </div>
+                
+                {/* Tabs Selector */}
+                <div className="flex border-b border-white/5 pb-2">
+                  {(["html", "nextjs", "react"] as const).map((tab) => (
+                    <button
+                      key={tab}
+                      onClick={() => setIntegrationTab(tab)}
+                      className={`mr-4 pb-1 text-xs font-bold transition-all relative cursor-pointer ${
+                        integrationTab === tab
+                          ? "text-white after:absolute after:bottom-0 after:left-0 after:right-0 after:h-0.5 after:bg-indigo-500"
+                          : "text-slate-500 hover:text-slate-350"
+                      }`}
+                    >
+                      {tab === "html" && "HTML / WordPress"}
+                      {tab === "nextjs" && "Next.js (SSR)"}
+                      {tab === "react" && "React / Vue (SPA)"}
+                    </button>
+                  ))}
+                </div>
+
+                {/* Tab Contents */}
+                {integrationTab === "html" && (
+                  <div className="space-y-3 text-xs text-slate-350">
+                    <p className="leading-relaxed">
+                      Dành cho các trang web HTML truyền thống, tệp PHP hoặc các CMS như <strong>WordPress</strong> (thêm vào phần cuối của tệp footer/header):
+                    </p>
+                    <div className="flex gap-2.5">
+                      <span className="flex h-5 w-5 shrink-0 items-center justify-center rounded-full bg-indigo-500/10 text-indigo-400 font-bold border border-indigo-500/20">1</span>
+                      <p className="leading-relaxed">Nhấp nút <strong>"Sao chép"</strong> phía trên để lấy đoạn mã nhúng.</p>
+                    </div>
+                    <div className="flex gap-2.5">
+                      <span className="flex h-5 w-5 shrink-0 items-center justify-center rounded-full bg-indigo-500/10 text-indigo-400 font-bold border border-indigo-500/20">2</span>
+                      <div className="leading-relaxed flex-1">
+                        Dán mã nhúng vào ngay trước thẻ đóng <strong><code>&lt;/body&gt;</code></strong> của trang web.
+                        <div className="mt-2 rounded-xl bg-slate-950 p-3 font-mono text-[10px] text-slate-500 border border-white/5 leading-normal">
+                          &nbsp;&nbsp;&lt;!-- Dán mã nhúng NovaChat vào đây --&gt;<br />
+                          &nbsp;&nbsp;&lt;script src="..." data-workspace-id="..."&gt;&lt;/script&gt;<br />
+                          <strong>&lt;/body&gt;</strong>
+                        </div>
+                      </div>
+                    </div>
+                  </div>
+                )}
+
+                {integrationTab === "nextjs" && (
+                  <div className="space-y-3 text-xs text-slate-355">
+                    <p className="leading-relaxed">
+                      Dành cho ứng dụng sử dụng <strong>Next.js (App Router)</strong>, hãy dùng component <code className="text-indigo-350 font-mono">Script</code> tối ưu sẵn trong layout gốc (<code className="text-indigo-350 font-mono">app/layout.tsx</code>):
+                    </p>
+                    <pre className="rounded-xl border border-white/10 bg-slate-950 p-4 text-[10px] leading-relaxed text-indigo-300 font-mono overflow-x-auto">
+{`import Script from 'next/script';
+
+export default function RootLayout({ children }) {
+  return (
+    <html lang="vi">
+      <body>
+        {children}
+        <Script
+          src="${widgetScriptUrl}"
+          data-workspace-id="${selectedWorkspace?.id}"
+          data-widget-token="${selectedWorkspace?.widget_token || ""}"
+          data-api-url="${apiBase}"
+          strategy="lazyOnload"
+        />
+      </body>
+    </html>
+  );
+}`}
+                    </pre>
+                  </div>
+                )}
+
+                {integrationTab === "react" && (
+                  <div className="space-y-3 text-xs text-slate-355">
+                    <p className="leading-relaxed">
+                      Dành cho các Single Page App (SPA) như <strong>React / Vue / Angular</strong>. Bạn có thể tự động nhúng widget động thông qua Hook <code className="text-indigo-350">useEffect</code> ở component gốc:
+                    </p>
+                    <pre className="rounded-xl border border-white/10 bg-slate-950 p-4 text-[10px] leading-relaxed text-indigo-300 font-mono overflow-x-auto">
+{`import { useEffect } from 'react';
+
+// Thêm đoạn code này vào App.tsx hoặc Component gốc của bạn:
+useEffect(() => {
+  const script = document.createElement('script');
+  script.src = "${widgetScriptUrl}";
+  script.setAttribute('data-workspace-id', '${selectedWorkspace?.id}');
+  script.setAttribute('data-widget-token', '${selectedWorkspace?.widget_token || ""}');
+  script.setAttribute('data-api-url', '${apiBase}');
+  script.async = true;
+  document.body.appendChild(script);
+
+  return () => {
+    document.body.removeChild(script);
+  };
+}, []);`}
+                    </pre>
+                  </div>
+                )}
+              </div>
+            </div>.
           </div>
 
-          <section className="grid gap-6 rounded-lg border border-white/5 bg-slate-900/40 p-6 lg:col-span-2 lg:grid-cols-[1fr_360px]">
+          <section className="relative overflow-hidden grid gap-6 rounded-lg border border-white/5 bg-slate-900/40 p-6 lg:col-span-2 lg:grid-cols-[1fr_360px]">
+            {currentUserPlan === "FREE" && (
+              <div className="absolute inset-0 bg-slate-950/80 backdrop-blur-sm z-20 flex flex-col items-center justify-center text-center p-6">
+                <Sparkles className="h-10 w-10 text-indigo-400 mb-2.5 animate-pulse" />
+                <h4 className="text-sm font-bold text-white uppercase tracking-wider">Tùy biến giao diện (PRO)</h4>
+                <p className="text-xs text-slate-400 mt-1 max-w-sm leading-relaxed">
+                  Thay đổi màu chủ đạo, tên Bot, lời chào, ảnh đại diện, vị trí hiển thị và loại bỏ nhãn "Powered by NovaChat" trên widget của bạn.
+                </p>
+                <button 
+                  onClick={() => onTabChange?.("upgrade")}
+                  className="mt-4 rounded-xl bg-gradient-to-r from-indigo-500 to-purple-500 px-5 py-2.5 text-xs font-bold text-white hover:from-indigo-600 hover:to-purple-600 transition cursor-pointer shadow-md shadow-indigo-500/20"
+                >
+                  Nâng cấp lên PRO ngay 🚀
+                </button>
+              </div>
+            )}
             <div>
               <h3 className="flex items-center gap-2 text-lg font-bold text-white"><Palette className="h-5 w-5 text-indigo-400" /> Tùy chỉnh Widget</h3>
               <div className="mt-5 grid gap-4 sm:grid-cols-2">

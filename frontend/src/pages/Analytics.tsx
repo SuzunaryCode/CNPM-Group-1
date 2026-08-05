@@ -1,5 +1,5 @@
 import { useEffect, useState } from "react";
-import { BarChart3, Bot, MessageSquare, Users, UserRoundCheck } from "lucide-react";
+import { BarChart3, Bot, MessageSquare, Users, UserRoundCheck, Lock } from "lucide-react";
 import api from "../services/api";
 
 interface Workspace {
@@ -16,6 +16,8 @@ interface WorkspaceStats {
 
 interface AnalyticsProps {
   workspaces: Workspace[];
+  currentUserPlan?: string | null;
+  onTabChange?: (tab: string) => void;
 }
 
 const EMPTY_STATS: WorkspaceStats = {
@@ -25,7 +27,7 @@ const EMPTY_STATS: WorkspaceStats = {
   messages_by_sender: {},
 };
 
-const Analytics = ({ workspaces }: AnalyticsProps) => {
+const Analytics = ({ workspaces, currentUserPlan, onTabChange }: AnalyticsProps) => {
   const [selectedWorkspaceId, setSelectedWorkspaceId] = useState<number | "">(workspaces[0]?.id ?? "");
   const [stats, setStats] = useState<WorkspaceStats>(EMPTY_STATS);
   const [loading, setLoading] = useState(false);
@@ -34,14 +36,42 @@ const Analytics = ({ workspaces }: AnalyticsProps) => {
   const effectiveWorkspaceId = selectedWorkspaceId || workspaces[0]?.id || "";
 
   useEffect(() => {
-    if (effectiveWorkspaceId === "") return;
+    if (effectiveWorkspaceId === "" || currentUserPlan === "FREE") return;
     let active = true;
     api.get(`/chat/${effectiveWorkspaceId}/stats`)
       .then((response) => active && setStats(response.data))
       .catch(() => active && setError("Không thể tải số liệu của workspace này."))
       .finally(() => active && setLoading(false));
     return () => { active = false; };
-  }, [effectiveWorkspaceId]);
+  }, [effectiveWorkspaceId, currentUserPlan]);
+
+  if (currentUserPlan === "FREE") {
+    return (
+      <div className="flex flex-col items-center justify-center text-center py-20 px-6 max-w-2xl mx-auto space-y-6">
+        <div className="relative">
+          <div className="absolute inset-0 bg-indigo-500/10 rounded-full blur-2xl animate-pulse"></div>
+          <div className="relative w-20 h-20 bg-slate-900/60 border border-slate-800 rounded-3xl flex items-center justify-center shadow-2xl backdrop-blur-xl">
+            <BarChart3 className="h-10 w-10 text-indigo-400" />
+            <Lock className="h-5 w-5 text-amber-400 absolute -bottom-1 -right-1" />
+          </div>
+        </div>
+        
+        <div className="space-y-2">
+          <h1 className="text-3xl font-black text-white tracking-tight">Thống kê & Báo cáo nâng cao</h1>
+          <p className="text-sm text-slate-400 leading-relaxed">
+            Xem số liệu chi tiết về tỷ lệ giải quyết hội thoại của Bot AI, năng suất nhân viên hỗ trợ, số lượng tin nhắn, và tốc độ phản hồi. Tính năng này chỉ áp dụng cho người dùng PRO.
+          </p>
+        </div>
+
+        <button 
+          onClick={() => onTabChange?.("upgrade")}
+          className="cursor-pointer rounded-xl bg-gradient-to-r from-indigo-500 via-purple-500 to-pink-500 px-6 py-3 font-bold text-white shadow-lg shadow-indigo-500/25 transition hover:opacity-90 active:scale-[0.98]"
+        >
+          Nâng cấp PRO để mở khóa 🚀
+        </button>
+      </div>
+    );
+  }
 
   const botMessages = stats.messages_by_sender.bot || 0;
   const agentMessages = stats.messages_by_sender.agent || 0;
